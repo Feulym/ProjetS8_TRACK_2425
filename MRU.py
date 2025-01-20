@@ -8,35 +8,58 @@ from numpy.random import randn
 ##############################
 # FONCTIONS
 ##############################
-def w_mru(sigma, Tech, size) :
+def Trajec_MRU(N, Tech, sigma) :
     """ 
-        Génération d'un bruit blanc gaussien centré 
-        représentant un bruit de modèle
+        Génération d'une trajectoire MRU 
+        d'après un bruit blanc gaussien centré 
+        comprenant un bruit de modèle
     """
-    Q = sigma * np.array(([Tech**3/3, Tech**2/2],
-                        [Tech**2/2, Tech]))
+    t = np.arange(0, (N+1)*Tech, Tech)
+    
+    A = np.array(([1, Tech],
+                  [0, 1]))
 
-    return Q @ randn(*size) 
+    Q = np.array(([Tech**3/3, Tech**2/2],
+                  [Tech**2/2, Tech]))
+    
+    D = np.linalg.cholesky(Q)
+    
+    X = np.zeros((2, N+1))
+
+    for k in range(N):
+        w = D @ randn(2, 1)
+        X[:, k+1] = (A @ X[:, k] + w)[:,0]
+        print("W =", w, "\nX_", k, " = ", X[:, k+1])
+    
+    t = np.arange(0, (N+1)*Tech, Tech)
+    return t, X
 
 ###############################
 # CALCUL MRU
 ###############################
-N = 500         # Taille échantillon
-n1 = 2; n2 = 1  # Dimensions d'un échantillon
-sigma = 1       # Variance bbgc
-Tech = 1        # Temps d'échantillonnage en seconde
+N = 101      # Taille échantillon
+sigma = 3     # Variance bbgc
+Tech = 1/10  # Temps d'échantillonnage en seconde
 
-w = np.zeros((n1,N))
-for i in range(N) :
-    w[:,i] = w_mru(sigma, Tech, (n1, n2))[:, 0]
-    print(w[:,i])
-
-print(np.mean(w[0, :]))
-print(np.mean(w[1, :]))
-
+t1, X = Trajec_MRU(N, Tech, sigma)
+t2, Y = Trajec_MRU(N, Tech, sigma)
 ###############################
 # AFFICHAGE
 ###############################
-plt.figure,
-plt.plot(w[0, :],w[1, :])
+fig, axs = plt.subplots(2, 2, figsize=(20, 8))
+labels = ['Position', 'Vitesse', 'Accélération']
+for i in range(2):
+    axs[i,0].plot(t1, X[i, :])
+    axs[i,0].set_title(labels[i])
+    axs[i,0].grid(True)
+    axs[i,1].plot(t2, Y[i, :])
+    axs[i,1].set_title(labels[i])
+    axs[i,1].grid(True)
+
+plt.tight_layout()
 plt.show()
+
+plt.figure()
+plt.plot(X, Y, 'bo')
+plt.title("Trajectoire")
+plt.grid()
