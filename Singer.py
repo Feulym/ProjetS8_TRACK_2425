@@ -29,7 +29,6 @@ def compute_Q_matrix(sigma_w2, alpha, Tech):
     - Matrice de covariance Q(k) de taille 3x3.
     """
 
-
     at = alpha * Tech
     
     q11 = (1 / (2 * alpha ** 5)) * (
