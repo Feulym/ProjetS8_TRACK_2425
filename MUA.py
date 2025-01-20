@@ -32,13 +32,18 @@ def Trajec_MUA(N, Tech, sigma):
     t = np.arange(0, (N+1)*Tech, Tech)
     return t, X
 
-# Test 
-N = 500
-Tech = 1
-sigma = 3
+###############################
+# CALCUL MUA
+###############################
+N = 500     # Taille échantillon
+sigma = 3   # Variance bbgc
+Tech = 1    # Temps d'échantillonnage en seconde
 
 t, X = Trajec_MUA(N, Tech, sigma)
 
+###############################
+# AFFICHAGE
+###############################
 fig, axs = plt.subplots(3, 1, figsize=(10, 8))
 labels = ['Position', 'Vitesse', 'Accélération']
 for i in range(3):
