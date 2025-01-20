@@ -19,8 +19,10 @@ def Trajec_MRU(N, Tech, sigma) :
     A = np.array(([1, Tech],
                   [0, 1]))
 
-    Q = np.array(([Tech**3/3, Tech**2/2],
-                  [Tech**2/2, Tech]))
+    Q = sigma**2 * np.array([
+        [Tech**3/3, Tech**2/2],
+        [Tech**2/2, Tech     ]
+    ])
     
     D = np.linalg.cholesky(Q)
     
@@ -38,7 +40,7 @@ def Trajec_MRU(N, Tech, sigma) :
 # CALCUL MRU
 ###############################
 N = 101      # Taille échantillon
-sigma = 3     # Variance bbgc
+sigma = 3    # Variance bbgc
 Tech = 1/10  # Temps d'échantillonnage en seconde
 
 t1, X = Trajec_MRU(N, Tech, sigma)
