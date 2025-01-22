@@ -28,7 +28,7 @@ def Trajec_MRU(N, Tech, sigma) :
 
     for k in range(N):
         w = D @ randn(2, 1)
-        X[:, k+1] = (A @ X[:, k] + w)[:,0]
+        X[:, k+1] = A @ X[:, k] + w[:,0]
         print("W =", w, "\nX_", k, " = ", X[:, k+1])
     
     t = np.arange(0, (N+1)*Tech, Tech)
@@ -37,9 +37,9 @@ def Trajec_MRU(N, Tech, sigma) :
 ###############################
 # CALCUL MRU
 ###############################
-N = 101      # Taille échantillon
+N = 250  # Taille échantillon
 sigma = 3     # Variance bbgc
-Tech = 1/10  # Temps d'échantillonnage en seconde
+Tech = 1  # Temps d'échantillonnage en seconde
 
 t1, X = Trajec_MRU(N, Tech, sigma)
 t2, Y = Trajec_MRU(N, Tech, sigma)
