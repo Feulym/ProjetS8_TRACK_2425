@@ -4,6 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import randn
+import package.common as com
 
 ##############################
 # FONCTIONS
@@ -68,7 +69,7 @@ def compute_Q_matrix(sigma_w2, alpha, Tech):
     
     return Q
 
-def traj_singer(N, Tech, sigma, alpha):
+def traj_singer(N, Tech, sigma2, alpha):
     """
     Calcule une trajectoire d'un modèle d'accélération Singer.
 
@@ -79,7 +80,7 @@ def traj_singer(N, Tech, sigma, alpha):
     vol. AES-6, no. 4, pp. 473-483, July 1970, 
     doi: 10.1109/TAES.1970.310128.
     """
-    Q = compute_Q_matrix(sigma**2, alpha, Tech)
+    Q = compute_Q_matrix(sigma2, alpha, Tech)
     L = np.linalg.cholesky(Q)
 
     A = np.array([
@@ -99,24 +100,27 @@ def traj_singer(N, Tech, sigma, alpha):
 ###############################
 # CALCUL Singer
 ###############################
-N = 300     # Taille échantillon
-sigma = 3   # écart-type bbgc
-alpha = 1/20  # Coefficiant d'atténuation (inverse du temps de manoeuvre)
-Tech = 1    # Temps d'échantillonnage en seconde
+N = 300             # Taille échantillon
+alpha = 1/300       # Coefficiant d'atténuation (inverse du temps de manoeuvre)
+sigma_m2 = 1e-4     # Variance accélaration de manoeuvre
+sigma_w2 = 2 * alpha * sigma_m2    # Variance bbgc
+Tech = 1            # Temps d'échantillonnage en seconde
+M = 20              # Nombre de réalisation
 
-t, X = traj_singer(N, Tech, sigma, alpha)
+com.multi_trajectoire(M, traj_singer, N, Tech, sigma_w2, alpha)
 
 ###############################
 # AFFICHAGE
 ###############################
-fig, axs = plt.subplots(3, 1, figsize=(10, 8))
-labels = ['Position', 'Vitesse', 'Accélération']
-colors = ['r', 'b', 'g']
-for i in range(3):
-    axs[i].plot(t, X[i, :], color=colors[i])
-    axs[i].set_title(labels[i], fontsize=14)
-    axs[i].set_xlabel('Temps (s)', fontsize=12)
-    axs[i].grid(True)
+# t, X = traj_singer(N, Tech, sigma, alpha)
+# fig, axs = plt.subplots(3, 1, figsize=(10, 8))
+# labels = ['Position', 'Vitesse', 'Accélération']
+# colors = ['r', 'b', 'g']
+# for i in range(3):
+#     axs[i].plot(t, X[i, :], color=colors[i])
+#     axs[i].set_title(labels[i], fontsize=14)
+#     axs[i].set_xlabel('Temps (s)', fontsize=12)
+#     axs[i].grid(True)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
