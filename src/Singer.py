@@ -79,7 +79,7 @@ def traj_singer(N, Tech, sigma, alpha):
     vol. AES-6, no. 4, pp. 473-483, July 1970, 
     doi: 10.1109/TAES.1970.310128.
     """
-    Q = compute_Q_matrix(sigma, alpha, Tech)
+    Q = compute_Q_matrix(sigma**2, alpha, Tech)
     L = np.linalg.cholesky(Q)
 
     A = np.array([
@@ -100,8 +100,8 @@ def traj_singer(N, Tech, sigma, alpha):
 # CALCUL Singer
 ###############################
 N = 300     # Taille échantillon
-sigma = 3   # Variance bbgc
-alpha = 20  # Coefficiant d'atténuation (inverse du temps de manoeuvre)
+sigma = 3   # écart-type bbgc
+alpha = 1/20  # Coefficiant d'atténuation (inverse du temps de manoeuvre)
 Tech = 1    # Temps d'échantillonnage en seconde
 
 t, X = traj_singer(N, Tech, sigma, alpha)

@@ -4,12 +4,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import randn
-import matplotlib.colors as mcolors
+import package.common as com
 
 ##############################
 # FONCTIONS
 ##############################
-def Trajec_MRU(N, Tech, sigma) :
+def trajec_MRU(N, Tech, sigma) :
     """ 
         Génération d'une trajectoire MRU 
         d'après un bruit blanc gaussien centré 
@@ -40,36 +40,8 @@ def Trajec_MRU(N, Tech, sigma) :
 ###############################
 # CALCUL MRU
 ###############################
-N = 50  # Taille échantillon
-sigma = 3     # Variance bbgc
-Tech = 1  # Temps d'échantillonnage en seconde
-
-colour = ['b','g','r','c','m','y','k']
-fig, axs = plt.subplots(2, 2, figsize=(20, 8))
-labels = ['Position', 'Vitesse', 'Accélération']
-plt.figure()
-
-for j in range(len(colour)):
-    t1, X = Trajec_MRU(N, Tech, sigma)
-    t2, Y = Trajec_MRU(N, Tech, sigma)
-    ###############################
-    # AFFICHAGE
-    ###############################
-    
-    for i in range(2):
-        axs[i,0].plot(t1, X[i, :], c=colour[j])
-        axs[i,0].set_title(labels[i])
-        axs[i,0].grid(True)
-        axs[i,1].plot(t2, Y[i, :], c=colour[j])
-        axs[i,1].set_title(labels[i])
-        axs[i,1].grid(True)
-        
-        plt.tight_layout()
-
-        
-    
-    plt.plot(X, Y, 'o', c=colour[j])
-    plt.title("Trajectoire")
-
-plt.grid()
-plt.show()
+N = 50        # Taille échantillon
+sigma = 3     # écart-type bbgc
+Tech = 1      # Temps d'échantillonnage en seconde
+M = 20        # Nombre de réalisation
+com.multi_trajectoire(M, trajec_MRU, N, Tech, sigma)

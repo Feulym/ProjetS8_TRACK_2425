@@ -36,7 +36,7 @@ def Trajec_MUA(N, Tech, sigma):
 # CALCUL MUA
 ###############################
 N = 500     # Taille échantillon
-sigma = 3   # Variance bbgc
+sigma = 3   # écart-type bbgc
 Tech = 1    # Temps d'échantillonnage en seconde
 
 t, X = Trajec_MUA(N, Tech, sigma)
