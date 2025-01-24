@@ -32,8 +32,7 @@ def trajec_MRU(N, Tech, sigma) :
     for k in range(N):
         w = D @ randn(2, 1)
         X[:, k+1] = A @ X[:, k] + w[:,0]
-        print("W =", w, "\nX_", k, " = ", X[:, k+1])
-    
+           
     t = np.arange(0, (N+1)*Tech, Tech)
     return t, X
 
@@ -41,7 +40,8 @@ def trajec_MRU(N, Tech, sigma) :
 # CALCUL MRU
 ###############################
 N = 50        # Taille échantillon
-sigma = 3     # écart-type bbgc
+sigma2 = 3     # Variance bbgc
 Tech = 1      # Temps d'échantillonnage en seconde
 M = 20        # Nombre de réalisation
-com.multi_trajectoire(M, trajec_MRU, N, Tech, sigma)
+t1, X, t2, Y = com.multi_trajectoire(M, trajec_MRU, N, Tech, sigma2)
+com.plot_vectetat(t1, X, t2, Y)
