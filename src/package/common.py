@@ -60,6 +60,8 @@ def plot_trajectoire(X, Y, NEW_PLOT=True, SHOW=True):
     if NEW_PLOT :
         plt.figure()
     plt.plot(X, Y, '-o')
+    plt.xlabel("x")
+    plt.ylabel("y")
     plt.title("Trajectoires")
     
     if SHOW:
