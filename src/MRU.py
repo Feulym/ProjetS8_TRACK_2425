@@ -15,7 +15,7 @@ def trajec_MRU(N, Tech, sigma) :
         d'après un bruit blanc gaussien centré 
         comprenant un bruit de modèle
     """
-    t = np.arange(0, (N+1)*Tech, Tech)
+    t = np.arange(0, N*Tech, Tech)
     
     A = np.array(([1, Tech],
                   [0, 1]))
@@ -27,21 +27,20 @@ def trajec_MRU(N, Tech, sigma) :
     
     D = np.linalg.cholesky(Q)
     
-    X = np.zeros((2, N+1))
+    X = np.zeros((2, N))
 
-    for k in range(N):
+    for k in range(N-1):
         w = D @ randn(2, 1)
         X[:, k+1] = A @ X[:, k] + w[:,0]
-        print("W =", w, "\nX_", k, " = ", X[:, k+1])
-    
-    t = np.arange(0, (N+1)*Tech, Tech)
+           
     return t, X
 
 ###############################
 # CALCUL MRU
 ###############################
 N = 50        # Taille échantillon
-sigma = 3     # écart-type bbgc
+sigma2 = 3     # Variance bbgc
 Tech = 1      # Temps d'échantillonnage en seconde
 M = 20        # Nombre de réalisation
-com.multi_trajectoire(M, trajec_MRU, N, Tech, sigma)
+X_mat, Y_mat = com.multi_trajectoire(M, trajec_MRU, N, Tech, sigma2)
+
