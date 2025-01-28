@@ -112,15 +112,15 @@ com.multi_trajectoire(M, traj_singer, N, Tech, sigma_w2, alpha)
 ###############################
 # AFFICHAGE
 ###############################
-# t, X = traj_singer(N, Tech, sigma, alpha)
-# fig, axs = plt.subplots(3, 1, figsize=(10, 8))
-# labels = ['Position', 'Vitesse', 'Accélération']
-# colors = ['r', 'b', 'g']
-# for i in range(3):
-#     axs[i].plot(t, X[i, :], color=colors[i])
-#     axs[i].set_title(labels[i], fontsize=14)
-#     axs[i].set_xlabel('Temps (s)', fontsize=12)
-#     axs[i].grid(True)
+t, X = traj_singer(N, Tech, sigma, alpha)
+fig, axs = plt.subplots(3, 1, figsize=(10, 8))
+labels = ['Position', 'Vitesse', 'Accélération']
+colors = ['r', 'b', 'g']
+for i in range(3):
+    axs[i].plot(t, X[i, :], color=colors[i])
+    axs[i].set_title(labels[i], fontsize=14)
+    axs[i].set_xlabel('Temps (s)', fontsize=12)
+    axs[i].grid(True)
 
-# plt.tight_layout()
-# plt.show()
+plt.tight_layout()
+plt.show()
