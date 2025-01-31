@@ -37,8 +37,8 @@ def Trajec_MUA(N, Tech, sigma):
 ###############################
 # CALCUL MUA
 ###############################
-N = 50        # Taille échantillon
-sigma2 = 3    # Variance bbgc
-Tech = 1      # Temps d'échantillonnage en seconde
-M = 20        # Nombre de réalisation
-X_mat, Y_mat = com.multi_trajectoire(M, Trajec_MUA, N, Tech, sigma2)
+# N = 50        # Taille échantillon
+# sigma2 = 3    # Variance bbgc
+# Tech = 1      # Temps d'échantillonnage en seconde
+# M = 20        # Nombre de réalisation
+# X_mat, Y_mat = com.multi_trajectoire(M, Trajec_MUA, N, Tech, sigma2)
