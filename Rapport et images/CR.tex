@@ -1,12 +1,12 @@
 \documentclass{beamer}
 \hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    filecolor=magenta,      
-    urlcolor=cyan,
-    pdftitle={Overleaf Example},
-    pdfpagemode=FullScreen,
-    }
+	colorlinks=true,
+	linkcolor=blue,
+	filecolor=magenta,      
+	urlcolor=cyan,
+	pdftitle={Overleaf Example},
+	pdfpagemode=FullScreen,
+}
 
 \usepackage{caption}
 \captionsetup{labelformat=empty, textfont=it}
@@ -26,71 +26,74 @@
 
 % Début du document
 \begin{document}
-
-% Page de titre
-\begin{frame}
-  \titlepage
-\end{frame}
-
-% Introduction
-\begin{frame}
-  \frametitle{Ordre du Jour}
-  \begin{itemize}
-    \item Présentation des avancées
-    \item Méthodes et Outils
-    \item Présentation du calendrier
-    \item Questions 
-  \end{itemize}
-\end{frame}
-
-% Compte rendu des avancées
-\begin{frame}
-  \frametitle{Compte rendu des avancées}
-  \begin{itemize}
-    \item MRU :
-    \begin{itemize}
-        \item[\hspace{1cm}] Théorie implémentée sous Python
-        \item[\hspace{1cm}] Premières trajectoires 
-    \end{itemize}
-    \item MUA et Singer
-    \begin{itemize}
-        \item[\hspace{1cm}] Calculs théoriques réalisés
-        \item[\hspace{1cm}] Implémentation sous Python et génération de trajectoires
-    \end{itemize}
-    \item Création d'une bibliothèque de fonctions communes
-    \begin{itemize}
-        \item[\hspace{1cm}] Génération de coordonnées X et Y
-        \item[\hspace{1cm}] Stockages des itérations de générations de vecteurs
-        \item[\hspace{1cm}] Fonctions d'affichages des données
-    \end{itemize}
-  \end{itemize}
-\end{frame}
-
-
-
-% Calendrier de travail
-\begin{frame}
-  \frametitle{Calendrier de travail}
-    \begin{itemize}
-        \item Pour la semaine prochaine : 
-        \begin{itemize}
-            \item[\hspace{1cm}] Générer les bases de données 
-            \item[\hspace{2cm}] ($\sim$ 50,000 échantillons | tailles variables ($100 < N < 750$))
-        \end{itemize}
-        \item La suite ?
-    \end{itemize}
-\end{frame}
-
-% Questions
-\begin{frame}
-  \frametitle{Questions}
-  \begin{itemize}
-    \item Cohérence des courbes ?
-    \item Quelle quantité d'échantillons ? Tailles variables des échantillons ?
-    \item Rebruiter nos données générées ? 
-    \item Un format de stockages de donnés à privilégier ?
-  \end{itemize}
-\end{frame}
-
-% Fin de la présentation
+	
+	% Page de titre
+	\begin{frame}
+		\titlepage
+	\end{frame}
+	
+	% Introduction
+	\begin{frame}
+		\frametitle{Ordre du Jour}
+		\begin{itemize}
+			\item Présentation des avancées Traitement du signal
+			\item Présentation des résultats d'approches IA
+			\item Questions 
+		\end{itemize}
+	\end{frame}
+	
+	% Compte rendu des avancées
+	\begin{frame}
+		\frametitle{Compte rendu des avancées}
+		\begin{itemize}
+			\item MRU :
+			\begin{itemize}
+				\item[\hspace{1cm}] Résultats expérimentaux et déductions 
+				\item[\hspace{1cm}] \[R_{xx}(0) = \frac{2\sigma^2}{T_{ech}^3} \]
+				\item[\hspace{1cm}] Blocage calcul (Stationarité au Sens Large | Autocorrélation) 
+			\end{itemize}
+			\item MUA :
+			\begin{itemize}
+				\item[\hspace{1cm}] Résultats expérimentaux et déductions 
+				\item[\hspace{1cm}] \[R_{xx}(0) = \frac{2\sigma^4}{3T_{ech}}\]
+				\item[\hspace{1cm}] Blocage calcul (Stationarité au Sens Large | Autocorrélation) 
+			\end{itemize}
+			\item Approches IA
+			\begin{itemize}
+				\item[\hspace{1cm}] Résultats réseaux réccurents (LSTM)
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Résultals d'entrainement LSTM simple}
+		
+	\end{frame}
+	
+	% Calendrier de travail
+	\begin{frame}
+		\frametitle{Calendrier de travail}
+		\begin{itemize}
+			\item Pour la semaine prochaine : 
+			\begin{itemize}
+				\item[\hspace{1cm}] Générer les bases de données 
+				\item[\hspace{2cm}] ($\sim$ 50,000 échantillons | tailles variables ($100 < N < 750$))
+			\end{itemize}
+			\item La suite ?
+		\end{itemize}
+	\end{frame}
+	
+	% Questions
+	\begin{frame}
+		\frametitle{Questions}
+		\begin{itemize}
+			\item Cohérence des courbes ?
+			\item Quelle quantité d'échantillons ? Tailles variables des échantillons ?
+			\item Rebruiter nos données générées ? 
+			\item Un format de stockages de donnés à privilégier ?
+		\end{itemize}
+	\end{frame}
+	
+	% Fin de la présentation
 \end{document}
+
