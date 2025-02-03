@@ -100,19 +100,19 @@ def traj_singer(N, Tech, sigma2, alpha):
 ###############################
 # CALCUL Singer
 ###############################
-N = 300             # Taille échantillon
-alpha = 1/300       # Coefficiant d'atténuation (inverse du temps de manoeuvre)
-sigma_m2 = 1e-4     # Variance accélaration de manoeuvre
-sigma_w2 = 2 * alpha * sigma_m2    # Variance bbgc
-Tech = 1            # Temps d'échantillonnage en seconde
-M = 20              # Nombre de réalisation
+# N = 300             # Taille échantillon
+# alpha = 1/300       # Coefficiant d'atténuation (inverse du temps de manoeuvre)
+# sigma_m2 = 1e-4     # Variance accélaration de manoeuvre
+# sigma_w2 = 2 * alpha * sigma_m2    # Variance bbgc
+# Tech = 1            # Temps d'échantillonnage en seconde
+# M = 20              # Nombre de réalisation
 
-com.multi_trajectoire(M, traj_singer, N, Tech, sigma_w2, alpha)
+# com.multi_trajectoire(M, traj_singer, N, Tech, sigma_w2, alpha)
 
 ###############################
 # AFFICHAGE
 ###############################
-# t, X = traj_singer(N, Tech, sigma, alpha)
+# t, X = traj_singer(N, Tech, sigma_w2, alpha)
 # fig, axs = plt.subplots(3, 1, figsize=(10, 8))
 # labels = ['Position', 'Vitesse', 'Accélération']
 # colors = ['r', 'b', 'g']
