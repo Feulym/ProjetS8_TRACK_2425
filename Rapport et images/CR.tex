@@ -65,35 +65,33 @@
 		\end{itemize}
 	\end{frame}
 	
-	\begin{frame}
-		\frametitle{Résultals d'entrainement LSTM simple}
-		
-	\end{frame}
-	
-	% Calendrier de travail
-	\begin{frame}
-		\frametitle{Calendrier de travail}
-		\begin{itemize}
-			\item Pour la semaine prochaine : 
-			\begin{itemize}
-				\item[\hspace{1cm}] Générer les bases de données 
-				\item[\hspace{2cm}] ($\sim$ 50,000 échantillons | tailles variables ($100 < N < 750$))
-			\end{itemize}
-			\item La suite ?
-		\end{itemize}
-	\end{frame}
-	
-	% Questions
-	\begin{frame}
-		\frametitle{Questions}
-		\begin{itemize}
-			\item Cohérence des courbes ?
-			\item Quelle quantité d'échantillons ? Tailles variables des échantillons ?
-			\item Rebruiter nos données générées ? 
-			\item Un format de stockages de donnés à privilégier ?
-		\end{itemize}
-	\end{frame}
+	\begin{frame}{Résultats LSTM}
+        \begin{columns}
+            \column{0.5\textwidth}
+            \centering
+            \includegraphics[width=0.9\linewidth]{Images/lstm_test.jpeg}
+            \begin{itemize}
+                \item Nombre de trajectoires : $190 000$
+                \item Longueur trajectoire : $15 - 3600$
+                \item $T_{ech}=1$ ; $\sigma^2 \in [0,001; 0,1]$
+                \item $\alpha = 0,1$
+            \end{itemize}
+    
+            \column{0.5\textwidth}
+            \centering
+            \includegraphics[width=0.9\linewidth]{Images/lstm_long.jpeg}
+            \begin{itemize}
+                \item Nombre de trajectoires : $500$
+                \item Longueur trajectoire : $50-150$
+                \item $T_{ech}=0,1$ ; $\sigma^2 \in [1e-3; 0,05]$
+                \item $\tau \in [1; 300]$ ; $\sigma_m^2 \in [1e-4; 1]$
+            \end{itemize}
+        \end{columns}
+    \end{frame}
+
+    \begin{frame}{Questions}
+        \Huge Questions
+    \end{frame}
 	
 	% Fin de la présentation
 \end{document}
-
