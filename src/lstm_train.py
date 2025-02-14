@@ -1,4 +1,5 @@
 import os
+import csv
 import argparse
 import h5py
 import torch
@@ -8,7 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 from torch.nn.utils.rnn import pad_sequence
 from sklearn.metrics import confusion_matrix
 from typing import Tuple, List
@@ -222,36 +223,27 @@ def generate_and_save_data(filepath: str, n_samples: int = 200_000, traj_length:
             dataset_labels[idx_start:idx_end] = labels
             dataset_lengths[idx_start:idx_end] = lengths
 
-def train_model(model: nn.Module, train_loader: DataLoader, 
-                num_epochs: int = 10, learning_rate: float = 1e-3):
-    """Train the model with mixed precision"""
+def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoader, 
+                num_epochs: int = 10, learning_rate: float = 1e-3, metrics_file: str = "metrics.csv"):
+    """Train the model with validation and save metrics to a CSV file"""
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
-    # scaler = torch.GradScaler(device=device.type)
-    
+
+    # Initialisation du fichier CSV
+    with open(metrics_file, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["epoch", "train_loss", "train_accuracy", "val_loss", "val_accuracy"])
+
     model.train()
-    best_loss = float('inf')    # TODO: Save and load last loss
+    best_loss = float('inf')
+
     for epoch in range(num_epochs):
+        # --- Phase d'entraînement ---
         epoch_loss = 0.0
         correct, total = 0, 0
-        
+
         for (inputs, labels, lengths) in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
             optimizer.zero_grad()
-
-            # with torch.autocast(device_type=device.type):
-            #     outputs = model(inputs, lengths)
-            #     if torch.isnan(outputs).any() or torch.isinf(outputs).any():
-            #         print("NaN or Inf detected in outputs!")
-            #         return
-
-            #     loss = criterion(outputs, labels)
-
-            # scaler.scale(loss).backward()
-            # scaler.step(optimizer)
-            # scaler.update()
-
-            # Note: If NaN loss: activate this part and
-            # deactivate scaler and autocast part
             outputs = model(inputs, lengths)
             loss = criterion(outputs, labels)
             loss.backward()
@@ -261,19 +253,55 @@ def train_model(model: nn.Module, train_loader: DataLoader,
             _, predicted = torch.max(outputs, 1)
             correct += (predicted == labels).sum().item()
             total += labels.size(0)
-        
-        avg_loss = epoch_loss / len(train_loader)
-        accuracy = correct / total
-        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.4f}, Accuracy: {accuracy:.4f}")
-        
-        # TODO: Add validation
 
-        # Save best model
-        if avg_loss < best_loss:
-            best_loss = avg_loss
+        avg_train_loss = epoch_loss / len(train_loader)
+        train_accuracy = correct / total
+
+        # --- Phase de validation ---
+        model.eval()
+        val_loss = 0.0
+        val_correct, val_total = 0, 0
+        with torch.no_grad():
+            for inputs, labels, lengths in val_loader:
+                outputs = model(inputs, lengths)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+                _, predicted = torch.max(outputs, 1)
+                val_correct += (predicted == labels).sum().item()
+                val_total += labels.size(0)
+
+        avg_val_loss = val_loss / len(val_loader)
+        val_accuracy = val_correct / val_total
+
+        # Affichage des métriques
+        print(f"Epoch {epoch+1}/{num_epochs}, "
+              f"Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, "
+              f"Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}")
+
+        # Sauvegarder les métriques dans le fichier CSV
+        with open(metrics_file, "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([epoch + 1, avg_train_loss, train_accuracy, avg_val_loss, val_accuracy])
+
+        # Sauvegarder le meilleur modèle
+        if avg_val_loss < best_loss:
+            best_loss = avg_val_loss
             torch.save(model.state_dict(), f'best_model.pt')
 
-def eval_model(model: nn.Module, test_loader: DataLoader):
+        # Repasser en mode entraînement
+        model.train()
+
+def eval_model(model: nn.Module, test_loader: DataLoader, 
+               class_names=None, save_path="confusion_matrix.png", show_figure=True):
+    """Evaluate the model and save a confusion matrix plot
+    
+    Args:
+        model (nn.Module): The trained model.
+        test_loader (DataLoader): DataLoader for the test dataset.
+        class_names (list): List of class names for the confusion matrix labels.
+        save_path (str): File path to save the confusion matrix image.
+        show_figure (bool): Whether to display the figure.
+    """
     model.eval()
     y_true = []
     y_pred = []
@@ -286,25 +314,77 @@ def eval_model(model: nn.Module, test_loader: DataLoader):
             y_true.extend(labels.cpu().numpy())
             y_pred.extend(predicted.cpu().numpy())
 
+    # Calculer la matrice de confusion
     cm = confusion_matrix(y_true, y_pred)
     cm_percent = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
 
+    # Définir les étiquettes des classes par défaut si non fournies
+    if class_names is None:
+        class_names = [f"Class {i}" for i in range(len(cm))]
+
+    # Tracer la matrice de confusion
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm_percent, annot=True, fmt='.1f', cmap='Blues', 
-                xticklabels=['MRU', 'MUA', 'Singer'],
-                yticklabels=['MRU', 'MUA', 'Singer'], 
+                xticklabels=class_names, yticklabels=class_names, 
                 cbar_kws={'label': 'Percentage'})
     plt.ylabel('True Label', fontsize=14)
     plt.xlabel('Predicted Label', fontsize=14)
     plt.title('Confusion Matrix', fontsize=16)
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
+
+    # Sauvegarder l'image
+    plt.savefig(save_path, bbox_inches="tight")
+    print(f"Confusion matrix saved to {save_path}")
+
+    # Afficher ou non la figure
+    if show_figure:
+        plt.show()
+    else:
+        plt.close()
+
+def plot_metrics(metrics_file: str = "metrics.csv"):
+    """Plot the training and validation loss and accuracy over epochs from a CSV metrics file"""
+    epochs = []
+    train_loss, train_accuracy = [], []
+    val_loss, val_accuracy = [], []
+
+    # Lire les métriques depuis le fichier CSV
+    with open(metrics_file, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            epochs.append(int(row["epoch"]))
+            train_loss.append(float(row["train_loss"]))
+            train_accuracy.append(float(row["train_accuracy"]))
+            val_loss.append(float(row["val_loss"]))
+            val_accuracy.append(float(row["val_accuracy"]))
+
+    # --- Afficher les courbes de perte ---
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, train_loss, label="Train Loss")
+    plt.plot(epochs, val_loss, label="Validation Loss")
+    plt.xlabel("Epoch", fontsize=14)
+    plt.ylabel("Loss", fontsize=14)
+    plt.title("Training and Validation Loss", fontsize=16)
+    plt.legend()
+
+    # --- Afficher les courbes de précision ---
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, train_accuracy, label="Train Accuracy")
+    plt.plot(epochs, val_accuracy, label="Validation Accuracy")
+    plt.xlabel("Epoch", fontsize=14)
+    plt.ylabel("Accuracy", fontsize=14)
+    plt.title("Training and Validation Accuracy", fontsize=16)
+    plt.legend()
+
+    plt.tight_layout()
     plt.show()
 
 def main():
     # Args
     parser = argparse.ArgumentParser(description="Train and evaluate trajectory classification model.")
-    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
+    parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to run on")
     parser.add_argument("--regen_data", action="store_true", help="Regenerate dataset if it exists")
@@ -329,7 +409,12 @@ def main():
         )
     
     # Create datasets
-    train_dataset = TrajectoryDataset(h5_path, 'train')
+    full_dataset = TrajectoryDataset(h5_path, 'train')
+    train_size = int(0.8 * len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    
+    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+    
     test_dataset = TrajectoryDataset(h5_path, 'test')
     
     # Create data loaders
@@ -337,6 +422,13 @@ def main():
         train_dataset,
         batch_size=args.batch_size,
         shuffle=True,
+        collate_fn=collate_fn,
+    )
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
         collate_fn=collate_fn,
     )
 
@@ -358,10 +450,12 @@ def main():
 
     # Training
     if not args.eval_only:
-        train_model(model, train_loader, num_epochs=50)
+        train_model(model, train_loader, val_loader, num_epochs=args.epochs)
+
+    plot_metrics()
 
     # Evaluation and confusion matrix
-    eval_model(model, test_loader)
+    eval_model(model, test_loader, class_names=['MRU', 'MUA', 'Singer'], show_figure=True)
 
 
 if __name__ == "__main__":
