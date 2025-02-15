@@ -1,5 +1,6 @@
 import os
 import csv
+import datetime
 import argparse
 import h5py
 import torch
@@ -224,7 +225,8 @@ def generate_and_save_data(filepath: str, n_samples: int = 200_000, traj_length:
             dataset_lengths[idx_start:idx_end] = lengths
 
 def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoader, 
-                num_epochs: int = 10, learning_rate: float = 1e-3, metrics_file: str = "metrics.csv"):
+                num_epochs: int = 10, learning_rate: float = 1e-3, metrics_file: str = "metrics.csv",
+                best_model_file: str = "best_model.pt"):
     """Train the model with validation and save metrics to a CSV file"""
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
@@ -234,11 +236,11 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
         writer = csv.writer(f)
         writer.writerow(["epoch", "train_loss", "train_accuracy", "val_loss", "val_accuracy"])
 
-    model.train()
     best_loss = float('inf')
 
     for epoch in range(num_epochs):
         # --- Phase d'entraînement ---
+        model.train()
         epoch_loss = 0.0
         correct, total = 0, 0
 
@@ -283,13 +285,11 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
             writer = csv.writer(f)
             writer.writerow([epoch + 1, avg_train_loss, train_accuracy, avg_val_loss, val_accuracy])
 
-        # Sauvegarder le meilleur modèle
+        # Sauvegarder le meilleur modèle selon la perte de validation
         if avg_val_loss < best_loss:
             best_loss = avg_val_loss
-            torch.save(model.state_dict(), f'best_model.pt')
-
-        # Repasser en mode entraînement
-        model.train()
+            torch.save(model.state_dict(), best_model_file)
+            print(f"Best model saved to {best_model_file}")
 
 def eval_model(model: nn.Module, test_loader: DataLoader, 
                class_names=None, save_path="confusion_matrix.png", show_figure=True):
@@ -343,8 +343,16 @@ def eval_model(model: nn.Module, test_loader: DataLoader,
     else:
         plt.close()
 
-def plot_metrics(metrics_file: str = "metrics.csv"):
-    """Plot the training and validation loss and accuracy over epochs from a CSV metrics file"""
+def plot_metrics(metrics_file: str = "metrics.csv", show_plot: bool = False):
+    """Plot the training and validation loss and accuracy over epochs from a CSV metrics file.
+    
+    Args:
+        metrics_file (str): Path to the CSV file containing the metrics.
+        save_path (str): Path to save the plot as a PNG file.
+        show_plot (bool): If True, the plot will be displayed. If False, it will only be saved.
+    """
+    save_path = os.path.splitext(metrics_file)[0] + ".png"
+
     epochs = []
     train_loss, train_accuracy = [], []
     val_loss, val_accuracy = [], []
@@ -379,23 +387,41 @@ def plot_metrics(metrics_file: str = "metrics.csv"):
     plt.legend()
 
     plt.tight_layout()
-    plt.show()
+
+    # Sauvegarder la figure en PNG
+    plt.savefig(save_path)
+
+    # Afficher la figure si nécessaire
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
 
 def main():
     # Args
     parser = argparse.ArgumentParser(description="Train and evaluate trajectory classification model.")
     parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
+    parser.add_argument("--learning_rate", type=float, default=1e-3, help="Learning rate")
+    parser.add_argument("--hidden_dim", type=int, default=128, help="Number of hidden dimensions for the LSTM")
+    parser.add_argument("--num_layers", type=int, default=2, help="Number of LSTM layers")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to run on")
     parser.add_argument("--regen_data", action="store_true", help="Regenerate dataset if it exists")
     parser.add_argument("--eval_only", action="store_true", help="Only evaluate the pretrained model without training")
+    parser.add_argument("--output_dir", type=str, default="results", help="Directory to save metrics and evaluation files")
     args = parser.parse_args()
 
-    # Set random seed
-    # set_seed()
+    # Création du dossier de sortie s'il n'existe pas
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
 
-    # Device setup
-    # device = torch.device(args.device)
+    # Générer un identifiant unique (timestamp)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Chemins des fichiers de sortie
+    metrics_file = os.path.join(args.output_dir, f"metrics_hd{args.hidden_dim}_n{args.num_layers}_{timestamp}.csv")
+    best_model_file = os.path.join(args.output_dir, f"best_model_hd{args.hidden_dim}_n{args.num_layers}_{timestamp}.pt")
+    conf_matrix_file = os.path.join(args.output_dir, f"confusion_matrix_hd{args.hidden_dim}_n{args.num_layers}_.png")
 
     # Data generation and storage
     h5_path = 'trajectory_data.h5'
@@ -412,9 +438,7 @@ def main():
     full_dataset = TrajectoryDataset(h5_path, 'train')
     train_size = int(0.8 * len(full_dataset))
     val_size = len(full_dataset) - train_size
-    
     train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
-    
     test_dataset = TrajectoryDataset(h5_path, 'test')
     
     # Create data loaders
@@ -424,14 +448,12 @@ def main():
         shuffle=True,
         collate_fn=collate_fn,
     )
-
     val_loader = DataLoader(
         val_dataset,
         batch_size=args.batch_size,
         shuffle=False,
         collate_fn=collate_fn,
     )
-
     test_loader = DataLoader(
         test_dataset,
         batch_size=args.batch_size,
@@ -439,23 +461,26 @@ def main():
         collate_fn=collate_fn,
     )
     
-    # Initialize the model
-    model = TrajectoryClassifier().to(device)
+    # Initialize the model with the chosen hyperparameters
+    device = torch.device(args.device)
+    model = TrajectoryClassifier(hidden_dim=args.hidden_dim, num_layers=args.num_layers).to(device)
 
-    # Check for pre-trained model
-    model_path = 'best_model.pt'
-    if os.path.exists(model_path):
-        print(f"Loading pretrained model from {model_path}...")
-        model.load_state_dict(torch.load(model_path, map_location=device))
+    # Optionnel : charger un modèle pré-entraîné s'il existe déjà
+    if os.path.exists(best_model_file):
+        print(f"Loading pretrained model from {best_model_file}...")
+        model.load_state_dict(torch.load(best_model_file, map_location=device))
 
     # Training
     if not args.eval_only:
-        train_model(model, train_loader, val_loader, num_epochs=args.epochs)
+        train_model(model, train_loader, val_loader, num_epochs=args.epochs, learning_rate=args.learning_rate,
+                    metrics_file=metrics_file, best_model_file=best_model_file)
 
-    plot_metrics()
+    # Metrics figure
+    plot_metrics(metrics_file=metrics_file, show_plot=False)
 
     # Evaluation and confusion matrix
-    eval_model(model, test_loader, class_names=['MRU', 'MUA', 'Singer'], show_figure=True)
+    eval_model(model, test_loader, class_names=['MRU', 'MUA', 'Singer'],
+               save_path=conf_matrix_file, show_figure=False)
 
 
 if __name__ == "__main__":
