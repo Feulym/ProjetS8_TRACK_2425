@@ -5,7 +5,6 @@ import argparse
 import h5py
 import torch
 import numpy as np
-import seaborn as sns
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
@@ -291,12 +290,11 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
             torch.save(model.state_dict(), best_model_file)
             print(f"Best model saved to {best_model_file}")
 
-def eval_model(model: nn.Module, test_loader: DataLoader, 
-               class_names=None, save_path="confusion_matrix.png", show_figure=True):
+def eval_model(model: torch.nn.Module, test_loader, class_names=None, save_path="confusion_matrix.png", show_figure=True):
     """Evaluate the model and save a confusion matrix plot
-    
+
     Args:
-        model (nn.Module): The trained model.
+        model (torch.nn.Module): The trained model.
         test_loader (DataLoader): DataLoader for the test dataset.
         class_names (list): List of class names for the confusion matrix labels.
         save_path (str): File path to save the confusion matrix image.
@@ -306,38 +304,47 @@ def eval_model(model: nn.Module, test_loader: DataLoader,
     y_true = []
     y_pred = []
 
+    # Gather predictions and true labels
     with torch.no_grad():
         for inputs, labels, lengths in tqdm(test_loader, desc="Evaluating"):
             outputs = model(inputs, lengths)
             _, predicted = torch.max(outputs, 1)
-            
             y_true.extend(labels.cpu().numpy())
             y_pred.extend(predicted.cpu().numpy())
 
-    # Calculer la matrice de confusion
+    # Calculate the confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     cm_percent = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
 
-    # Définir les étiquettes des classes par défaut si non fournies
+    # Set default class labels if not provided
     if class_names is None:
         class_names = [f"Class {i}" for i in range(len(cm))]
 
-    # Tracer la matrice de confusion
+    # Plotting with Matplotlib's imshow
     plt.figure(figsize=(8, 6))
-    sns.heatmap(cm_percent, annot=True, fmt='.1f', cmap='Blues', 
-                xticklabels=class_names, yticklabels=class_names, 
-                cbar_kws={'label': 'Percentage'})
-    plt.ylabel('True Label', fontsize=14)
-    plt.xlabel('Predicted Label', fontsize=14)
-    plt.title('Confusion Matrix', fontsize=16)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
+    plt.imshow(cm_percent, interpolation='nearest', cmap='Blues')
+    plt.colorbar(label='Percentage')
 
-    # Sauvegarder l'image
+    # Add labels and title
+    plt.title('Confusion Matrix', fontsize=16)
+    plt.xlabel('Predicted Label', fontsize=14)
+    plt.ylabel('True Label', fontsize=14)
+
+    # Add class names as ticks
+    tick_marks = np.arange(len(class_names))
+    plt.xticks(tick_marks, class_names, rotation=45, fontsize=12)
+    plt.yticks(tick_marks, class_names, fontsize=12)
+
+    # Annotate each cell with the corresponding percentage
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, f"{cm_percent[i, j]:.1f}%", 
+                     ha='center', va='center', color="black" if cm_percent[i, j] < 50 else "white")
+
+    # Save and display the figure
     plt.savefig(save_path, bbox_inches="tight")
     print(f"Confusion matrix saved to {save_path}")
-
-    # Afficher ou non la figure
+    
     if show_figure:
         plt.show()
     else:
@@ -430,7 +437,7 @@ def main():
         # TODO: Fix samples or lengths
         generate_and_save_data(
             filepath=h5_path,
-            n_samples=11_000,
+            n_samples=15_000,
             traj_length=[15, 60 * 10]
         )
     
