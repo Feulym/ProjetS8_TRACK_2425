@@ -4,26 +4,37 @@ MACHINES=("machine1" "machine2" "machine3")
 
 # Dossier du projet sur la machine distante
 REMOTE_DIR="/chemin/vers/votre/projet"
+EXEC="nom_executable.ext"
 
-# Hyperparamètres
+# Hyperparamètres fixes
 EPOCHS=50
 BATCH_SIZE=32
-LEARNING_RATE=0.001
 
+# Hyperparamètres à varier
+LEARNING_RATES=(1e-3 1e-4 1e-5)
 HIDDEN_DIMS=(32 64 128 256)
 NUM_LAYERS=(1 2 3)
 
-for MACHINE in "${MACHINES[@]}"; do
+# Nombre total de machines
+TOTAL_MACHINES=${#MACHINES[@]}
+i=0
+
+for LEARNING_RATE in "${LEARNING_RATES[@]}"; do
     for HIDDEN_DIM in "${HIDDEN_DIMS[@]}"; do
         for NUM_LAYER in "${NUM_LAYERS[@]}"; do
-            echo "Lancement sur $MACHINE avec hidden_dim=$HIDDEN_DIM, num_layers=$NUM_LAYER"
-            ssh "$MACHINE" "cd $REMOTE_DIR && source .env/bin/activate && python lstm_train.py \
+            MACHINE=${MACHINES[$(( i % TOTAL_MACHINES ))]}
+            
+            echo "Lancement sur $MACHINE avec learning_rate=$LEARNING_RATE, hidden_dim=$HIDDEN_DIM, num_layers=$NUM_LAYER"
+            
+            ssh "$MACHINE" "cd $REMOTE_DIR && source .env/bin/activate && python $EXEC \
                 --epochs $EPOCHS \
                 --batch_size $BATCH_SIZE \
                 --learning_rate $LEARNING_RATE \
                 --hidden_dim $HIDDEN_DIM \
                 --num_layers $NUM_LAYER \
                 --output_dir results" &
+            
+            i=$(( i + 1 ))
         done
     done
 done
