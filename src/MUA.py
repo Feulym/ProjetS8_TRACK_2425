@@ -4,6 +4,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import randn
+import package.common as com
+
 
 ##############################
 # FONCTIONS
@@ -23,9 +25,9 @@ def Trajec_MUA(N, Tech, sigma):
     
     L = np.linalg.cholesky(Q)
     
-    X = np.zeros((3, N+1))
+    X = np.zeros((3, N))
 
-    for k in range(N):
+    for k in range(N-1):
         w = L @ np.random.randn(3, 1)
         X[:, k+1] = A @ X[:, k] + w[:,0]
     
@@ -35,21 +37,8 @@ def Trajec_MUA(N, Tech, sigma):
 ###############################
 # CALCUL MUA
 ###############################
-N = 500     # Taille échantillon
-sigma = 3   # écart-type bbgc
-Tech = 1    # Temps d'échantillonnage en seconde
-
-t, X = Trajec_MUA(N, Tech, sigma)
-
-###############################
-# AFFICHAGE
-###############################
-fig, axs = plt.subplots(3, 1, figsize=(10, 8))
-labels = ['Position', 'Vitesse', 'Accélération']
-for i in range(3):
-    axs[i].plot(t, X[i, :])
-    axs[i].set_title(labels[i])
-    axs[i].grid(True)
-
-plt.tight_layout()
-plt.show()
+# N = 50        # Taille échantillon
+# sigma2 = 3    # Variance bbgc
+# Tech = 1      # Temps d'échantillonnage en seconde
+# M = 20        # Nombre de réalisation
+# X_mat, Y_mat = com.multi_trajectoire(M, Trajec_MUA, N, Tech, sigma2)
