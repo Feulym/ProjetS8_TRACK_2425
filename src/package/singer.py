@@ -1,14 +1,9 @@
-###############################
-# IMPORTS
-###############################
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import randn
 import package.common as com
 
-##############################
-# FONCTIONS
-##############################
+
 def compute_Q_matrix(sigma_w2, alpha, Tech):
     """
     Calcule la matrice de covariance du bruit de processus pour un modèle d'accélération Singer.
@@ -97,30 +92,26 @@ def traj_singer(N, Tech, sigma2, alpha):
     t = np.arange(0, N*Tech, Tech)
     return t, X
 
-###############################
-# CALCUL Singer
-###############################
-# N = 300             # Taille échantillon
-# alpha = 1/300       # Coefficiant d'atténuation (inverse du temps de manoeuvre)
-# sigma_m2 = 1e-4     # Variance accélaration de manoeuvre
-# sigma_w2 = 2 * alpha * sigma_m2    # Variance bbgc
-# Tech = 1            # Temps d'échantillonnage en seconde
-# M = 20              # Nombre de réalisation
 
-# com.multi_trajectoire(M, traj_singer, N, Tech, sigma_w2, alpha)
+if __name__ == "__main__":
+    N = 300             # Taille échantillon
+    alpha = 1/300       # Coefficiant d'atténuation (inverse du temps de manoeuvre)
+    sigma_m2 = 1e-4     # Variance accélaration de manoeuvre
+    sigma_w2 = 2 * alpha * sigma_m2    # Variance bbgc
+    Tech = 1            # Temps d'échantillonnage en seconde
+    M = 20              # Nombre de réalisation
 
-###############################
-# AFFICHAGE
-###############################
-# t, X = traj_singer(N, Tech, sigma_w2, alpha)
-# fig, axs = plt.subplots(3, 1, figsize=(10, 8))
-# labels = ['Position', 'Vitesse', 'Accélération']
-# colors = ['r', 'b', 'g']
-# for i in range(3):
-#     axs[i].plot(t, X[i, :], color=colors[i])
-#     axs[i].set_title(labels[i], fontsize=14)
-#     axs[i].set_xlabel('Temps (s)', fontsize=12)
-#     axs[i].grid(True)
+    com.multi_trajectoire(M, traj_singer, N, Tech, sigma_w2, alpha)
 
-# plt.tight_layout()
-# plt.show()
+    t, X = traj_singer(N, Tech, sigma_w2, alpha)
+    fig, axs = plt.subplots(3, 1, figsize=(10, 8))
+    labels = ['Position', 'Vitesse', 'Accélération']
+    colors = ['r', 'b', 'g']
+    for i in range(3):
+        axs[i].plot(t, X[i, :], color=colors[i])
+        axs[i].set_title(labels[i], fontsize=14)
+        axs[i].set_xlabel('Temps (s)', fontsize=12)
+        axs[i].grid(True)
+
+    plt.tight_layout()
+    plt.show()

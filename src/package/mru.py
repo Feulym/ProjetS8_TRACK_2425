@@ -1,14 +1,9 @@
-###############################
-# IMPORTS
-###############################
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import randn
 import package.common as com
 
-##############################
-# FONCTIONS
-##############################
+
 def trajec_MRU(N, Tech, sigma) :
     """ 
         Génération d'une trajectoire MRU 
@@ -35,12 +30,11 @@ def trajec_MRU(N, Tech, sigma) :
            
     return t, X
 
-###############################
-# CALCUL MRU
-###############################
-# N = 50        # Taille échantillon
-# sigma2 = 3     # Variance bbgc
-# Tech = 1      # Temps d'échantillonnage en seconde
-# M = 20        # Nombre de réalisation
-# X_mat, Y_mat = com.multi_trajectoire(M, trajec_MRU, N, Tech, sigma2)
 
+if __name__ == "__main__":
+    N = 50        # Taille échantillon
+    sigma2 = 3     # Variance bbgc
+    Tech = 1      # Temps d'échantillonnage en seconde
+    M = 20        # Nombre de réalisation
+
+    X_mat, Y_mat = com.multi_trajectoire(M, trajec_MRU, N, Tech, sigma2)
