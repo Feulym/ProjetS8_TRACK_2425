@@ -1,15 +1,9 @@
-###############################
-# IMPORTS
-###############################
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import randn
 import package.common as com
 
 
-##############################
-# FONCTIONS
-##############################
 def Trajec_MUA(N, Tech, sigma):
     A = np.array([
         [1, Tech, Tech**2/2],
@@ -34,11 +28,11 @@ def Trajec_MUA(N, Tech, sigma):
     t = np.arange(0, (N+1)*Tech, Tech)
     return t, X
 
-###############################
-# CALCUL MUA
-###############################
-# N = 50        # Taille échantillon
-# sigma2 = 3    # Variance bbgc
-# Tech = 1      # Temps d'échantillonnage en seconde
-# M = 20        # Nombre de réalisation
-# X_mat, Y_mat = com.multi_trajectoire(M, Trajec_MUA, N, Tech, sigma2)
+
+if __name__ == "__main__":
+    N = 50        # Taille échantillon
+    sigma2 = 3    # Variance bbgc
+    Tech = 1      # Temps d'échantillonnage en seconde
+    M = 20        # Nombre de réalisation
+
+    X_mat, Y_mat = com.multi_trajectoire(M, Trajec_MUA, N, Tech, sigma2)
