@@ -1,4 +1,5 @@
 import os
+import sys
 import csv
 import datetime
 import argparse
@@ -10,60 +11,88 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
+
 from torch.utils.data import Dataset, DataLoader, random_split
 from torch.nn.utils.rnn import pad_sequence
-from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 
-from data_gen import generate_and_save_data
+# Fix package import
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from package.viz import plot_metrics, plot_cm
 
 
 # ----------------------------
-# Global Configurations and Logging
+# Global Configurations
 # ----------------------------
 DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # ----------------------------
-# Dataset and DataLoader Utilities
+# Dataset and DataLoader
 # ----------------------------
 class TrajectoryDataset(Dataset):
-    def __init__(self, h5_path: str, mode: str = 'train'):
+    def __init__(self, h5_path: str):
         """
-        Dataset class that loads data from HDF5 file, ensuring correct sequence lengths.
-        
+        Loads the entire trajectory dataset from an HDF5 file.
+        Assumes the file contains the keys:
+          - "trajectories": the trajectories data,
+          - "labels": the labels,
+          - "lengths": actual sequence lengths.
+          
         Args:
-            h5_path: Path to HDF5 file.
-            mode: 'train' or 'test'.
+            h5_path: Path to the HDF5 file.
         """
         self.h5_path = h5_path
-        self.mode = mode
-
         with h5py.File(h5_path, 'r') as f:
-            self.length = len(f[f'{mode}/labels'])
+            self.length = len(f["labels"])
 
     def __len__(self) -> int:
         return self.length
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Load a single trajectory and its label, trimming the sequence to its actual length.
+        Retrieve a single trajectory and its label, trimmed to its actual length.
         """
-        # TODO: Use length
         with h5py.File(self.h5_path, 'r') as f:
-            trajectory = f[f'{self.mode}/trajectories'][idx]
-            label = f[f'{self.mode}/labels'][idx]
-            length = f[f'{self.mode}/lengths'][idx]
-
+            trajectory = f["trajectories"][idx]
+            label = f["labels"][idx]
+            length = f["lengths"][idx]
         return torch.tensor(trajectory[:length], dtype=torch.float32), torch.tensor(label, dtype=torch.uint8)
 
-def collate_fn(batch):
-    """Collation for variable-length sequences"""
-    # TODO: Use lengths
+
+def collate_fn(batch: List[Tuple[torch.Tensor, torch.Tensor]]) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Collates a batch of variable-length sequences by padding them.
+    Returns the padded sequences, labels, and original lengths.
+    """
     sequences, labels = zip(*batch)
     lengths = torch.tensor([len(seq) for seq in sequences])
     padded_sequences = pad_sequence(sequences, batch_first=True, padding_value=0)
     return padded_sequences, torch.tensor(labels, dtype=torch.uint8), lengths
+
+
+def prepare_dataloaders(h5_path: str, batch_size: int) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    """
+    Load the full dataset from the given file and split it into train, validation,
+    and test DataLoaders.
+    
+    Split ratio: 80% train, 10% validation, 10% test.
+    """
+    full_dataset = TrajectoryDataset(h5_path)
+    train_size = int(0.8 * len(full_dataset))
+    remaining = len(full_dataset) - train_size
+    val_size = remaining // 2
+    test_size = remaining - val_size
+    train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size])
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
+                              collate_fn=collate_fn, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,
+                            collate_fn=collate_fn, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
+                             collate_fn=collate_fn, pin_memory=True)
+    return train_loader, val_loader, test_loader
 
 
 # ----------------------------
@@ -74,7 +103,7 @@ class TrajectoryClassifier(nn.Module):
     LSTM-based classifier for trajectory data.
     Uses a bidirectional LSTM with dropout followed by a fully connected layer.
     """
-    def __init__(self, input_dim: int = 2, hidden_dim: int = 128, num_layers: int = 2,
+    def __init__(self, input_dim: int = 2, hidden_dim: int = 64, num_layers: int = 2,
                  num_classes: int = 3, dropout: float = 0.3):
         super().__init__()
         self.lstm = nn.LSTM(
@@ -89,25 +118,83 @@ class TrajectoryClassifier(nn.Module):
         self.dropout = nn.Dropout(dropout)
     
     def forward(self, x: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor:
-        # Pack the padded sequence for efficiency
         packed_x = nn.utils.rnn.pack_padded_sequence(x, lengths.cpu(), batch_first=True, enforce_sorted=False)
         _, (h_n, _) = self.lstm(packed_x)
-        # Concatenate the final hidden states from both directions
+        # Concatenate the final hidden states from both directions (forward and backward)
         h_n = torch.cat((h_n[-2, :, :], h_n[-1, :, :]), dim=1)
         return self.fc(self.dropout(h_n))
 
 
 # ----------------------------
-# Training, Evaluation, and Metrics Plotting
+# Training, Validation and Evaluation
 # ----------------------------
-def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoader, 
-                num_epochs: int = 10, learning_rate: float = 1e-3, metrics_file: str = "metrics.csv",
-                best_model_file: str = "best_model.pt", device: torch.device = DEFAULT_DEVICE) -> None:
+def train_epoch(model: nn.Module, loader: DataLoader, optimizer: optim.Optimizer,
+                criterion: nn.Module, device: torch.device) -> Tuple[float, float]:
     """
-    Train the model with validation and save metrics to a CSV file
+    Train the model for one epoch.
+    
+    Returns:
+        A tuple of (average loss, accuracy).
+    """
+    model.train()
+    epoch_loss, correct, total = 0.0, 0, 0
+
+    for inputs, labels, lengths in tqdm(loader, desc="Training phase", leave=False):
+        inputs, labels, lengths = inputs.to(device), labels.to(device), lengths.to(device)
+        optimizer.zero_grad()
+        outputs = model(inputs, lengths)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        epoch_loss += loss.item()
+        _, predicted = torch.max(outputs, 1)
+        correct += (predicted == labels).sum().item()
+        total += labels.size(0)
+    
+    return epoch_loss / len(loader), correct / total if total > 0 else 0.0
+
+
+def validate_epoch(model: nn.Module, loader: DataLoader, criterion: nn.Module,
+                   device: torch.device) -> Tuple[float, float]:
+    """
+    Validate the model for one epoch.
+    
+    Returns:
+        A tuple of (average loss, accuracy).
+    """
+    model.eval()
+    val_loss, correct, total = 0.0, 0, 0
+    with torch.no_grad():
+        for inputs, labels, lengths in tqdm(loader, desc="Validation phase", leave=False):
+            inputs, labels, lengths = inputs.to(device), labels.to(device), lengths.to(device)
+            outputs = model(inputs, lengths)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
+            _, predicted = torch.max(outputs, 1)
+            correct += (predicted == labels).sum().item()
+            total += labels.size(0)
+    return val_loss / len(loader), correct / total if total > 0 else 0.0
+
+
+def log_metrics(metrics_file: str, epoch: int, train_loss: float, train_acc: float,
+                val_loss: float, val_acc: float) -> None:
+    """
+    Append epoch metrics to a CSV file.
+    """
+    with open(metrics_file, "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([epoch, train_loss, train_acc, val_loss, val_acc])
+
+
+def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoader,
+                num_epochs: int, learning_rate: float, metrics_file: str,
+                best_model_file: str, device: torch.device) -> None:
+    """
+    Train the model with periodic validation and save the best model.
     """
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     # Initialize CSV file
     with open(metrics_file, "w", newline="") as f:
@@ -115,252 +202,110 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
         writer.writerow(["epoch", "train_loss", "train_accuracy", "val_loss", "val_accuracy"])
 
     best_loss = float('inf')
-    for epoch in range(num_epochs):
-        # --- Training phase ---
-        model.train()
-        epoch_loss, correct, total = 0.0, 0, 0
+    for epoch in range(1, num_epochs + 1):
+        # Training phase
+        train_loss, train_acc = train_epoch(model, train_loader, optimizer, criterion, device)
 
-        for (inputs, labels, lengths) in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
-            inputs, labels, lengths = inputs.to(device), labels.to(device), lengths.to(device)
-            
-            optimizer.zero_grad()
-            outputs = model(inputs, lengths)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+        # Validation phase
+        val_loss, val_acc = validate_epoch(model, val_loader, criterion, device)
 
-            epoch_loss += loss.item()
-            _, predicted = torch.max(outputs, 1)
-            correct += (predicted == labels).sum().item()
-            total += labels.size(0)
+        print(f"Epoch {epoch}/{num_epochs} - "
+              f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f} | "
+              f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
 
-        avg_train_loss = epoch_loss / len(train_loader)
-        train_accuracy = correct / total
+        # Save metrics
+        log_metrics(metrics_file, epoch, train_loss, train_acc, val_loss, val_acc)
 
-        # --- Validation phase ---
-        model.eval()
-        val_loss, val_correct, val_total = 0.0, 0, 0
-        with torch.no_grad():
-            for inputs, labels, lengths in val_loader:
-                inputs, labels, lengths = inputs.to(device), labels.to(device), lengths.to(device)
-
-                outputs = model(inputs, lengths)
-                loss = criterion(outputs, labels)
-                val_loss += loss.item()
-                _, predicted = torch.max(outputs, 1)
-                val_correct += (predicted == labels).sum().item()
-                val_total += labels.size(0)
-
-        avg_val_loss = val_loss / len(val_loader)
-        val_accuracy = val_correct / val_total
-
-        print(f"Epoch {epoch+1}/{num_epochs}, "
-              f"Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, "
-              f"Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}")
-
-        # Log metrics to CSV
-        with open(metrics_file, "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([epoch + 1, avg_train_loss, train_accuracy, avg_val_loss, val_accuracy])
-
-        # Save the best model based on validation loss
-        if avg_val_loss < best_loss:
-            best_loss = avg_val_loss
+        # Save best model on validation
+        if val_loss < best_loss:
+            best_loss = val_loss
             torch.save(model.state_dict(), best_model_file)
             print(f"Best model saved to {best_model_file}")
 
 
-def eval_model(model: nn.Module, test_loader: DataLoader, class_names: List = None,
-               save_path: str = "confusion_matrix.png", show_figure: bool = False,
-               device: torch.device = DEFAULT_DEVICE) -> None:
+def evaluate_model(model: nn.Module, test_loader: DataLoader,
+                   device: torch.device) -> Tuple[List[int], List[int]]:
     """
-    Evaluate the model on the test set and save a confusion matrix.
-
-    Args:
-        model (torch.nn.Module): The trained model.
-        test_loader (DataLoader): DataLoader for the test dataset.
-        class_names (list): List of class names for the confusion matrix labels.
-        save_path (str): File path to save the confusion matrix image.
-        show_figure (bool): Whether to display the figure.
+    Evaluate the model on the test dataset.
+    
+    Returns:
+        y_true: List of ground truth labels.
+        y_pred: List of predicted labels.
     """
     model.eval()
     y_true, y_pred = [], []
     with torch.no_grad():
-        for inputs, labels, lengths in tqdm(test_loader, desc="Evaluating"):
+        for inputs, labels, lengths in tqdm(test_loader, desc="Evaluating", leave=False):
             inputs, labels, lengths = inputs.to(device), labels.to(device), lengths.to(device)
-
             outputs = model(inputs, lengths)
             _, predicted = torch.max(outputs, 1)
             y_true.extend(labels.cpu().numpy())
             y_pred.extend(predicted.cpu().numpy())
-
-    # Calculate the confusion matrix in percentage
-    cm = confusion_matrix(y_true, y_pred)
-    cm_percent = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100   # TODO: Check: cm.sum(axis=1, keepdims=True)
-
-    # Load default class names
-    if class_names is None:
-        class_names = [f"Class {i}" for i in range(len(cm))]
-
-    plt.figure(figsize=(8, 6))
-    plt.imshow(cm_percent, interpolation='nearest', cmap='Blues')
-    plt.colorbar(label='Percentage')
-    plt.title('Confusion Matrix', fontsize=16)
-    plt.xlabel('Predicted Label', fontsize=14)
-    plt.ylabel('True Label', fontsize=14)
-    tick_marks = np.arange(len(class_names))
-    plt.xticks(tick_marks, class_names, rotation=45, fontsize=12)
-    plt.yticks(tick_marks, class_names, fontsize=12)
-
-    # Annotate each cell with the corresponding percentage
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            plt.text(j, i, f"{cm_percent[i, j]:.1f}%", ha='center', va='center',
-                     color="black" if cm_percent[i, j] < 50 else "white")
-
-    plt.savefig(save_path, bbox_inches="tight")
-    print(f"Confusion matrix saved to {save_path}")
-    
-    if show_figure:
-        plt.show()
-    else:
-        plt.close()
-
-
-def plot_metrics(metrics_file: str = "metrics.csv", show_plot: bool = False) -> None:
-    """
-    Plot the training and validation loss and accuracy over epochs from a CSV metrics file.
-    
-    Args:
-        metrics_file (str): Path to the CSV file containing the metrics.
-        save_path (str): Path to save the plot as a PNG file.
-        show_plot (bool): If True, the plot will be displayed. If False, it will only be saved.
-    """
-    save_path = os.path.splitext(metrics_file)[0] + ".png"
-
-    epochs = []
-    train_loss, train_accuracy = [], []
-    val_loss, val_accuracy = [], []
-
-    with open(metrics_file, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            epochs.append(int(row["epoch"]))
-            train_loss.append(float(row["train_loss"]))
-            train_accuracy.append(float(row["train_accuracy"]))
-            val_loss.append(float(row["val_loss"]))
-            val_accuracy.append(float(row["val_accuracy"]))
-
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs, train_loss, label="Train Loss")
-    plt.plot(epochs, val_loss, label="Validation Loss")
-    plt.xlabel("Epoch", fontsize=14)
-    plt.ylabel("Loss", fontsize=14)
-    plt.title("Training and Validation Loss", fontsize=16)
-    plt.legend()
-
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs, train_accuracy, label="Train Accuracy")
-    plt.plot(epochs, val_accuracy, label="Validation Accuracy")
-    plt.xlabel("Epoch", fontsize=14)
-    plt.ylabel("Accuracy", fontsize=14)
-    plt.title("Training and Validation Accuracy", fontsize=16)
-    plt.legend()
-
-    plt.tight_layout()
-    plt.savefig(save_path)
-
-    if show_plot:
-        plt.show()
-    else:
-        plt.close()
+    return y_true, y_pred
 
 
 # ----------------------------
 # Main
 # ----------------------------
 def main():
-    parser = argparse.ArgumentParser(description="Train and evaluate trajectory classification model.")
-    parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
+    parser = argparse.ArgumentParser(description="Train and/or evaluate trajectory classification model.")
+    parser.add_argument("--dataset_file", type=str, required=True, help="Path to the dataset file (HDF5).")
+    parser.add_argument("--model_file", type=str, default=None,
+                        help="Path to a pretrained model file for evaluation (required in eval_only mode).")
+    parser.add_argument("--eval_only", action="store_true", help="Only evaluate the pretrained model.")
+    parser.add_argument("--epochs", type=int, default=40, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="Learning rate")
-    parser.add_argument("--hidden_dim", type=int, default=128, help="Number of hidden dimensions for the LSTM")
+    parser.add_argument("--hidden_dim", type=int, default=64, help="Hidden dimension for the LSTM")
     parser.add_argument("--num_layers", type=int, default=2, help="Number of LSTM layers")
-    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to run on")
-    parser.add_argument("--regen_data", action="store_true", help="Regenerate dataset if it exists")
-    parser.add_argument("--eval_only", action="store_true", help="Only evaluate the pretrained model without training")
-    parser.add_argument("--output_dir", type=str, default="results", help="Directory to save metrics and evaluation files")
+    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu",
+                        help="Device to run on")
+    parser.add_argument("--output_dir", type=str, default="results",
+                        help="Directory to save metrics and evaluation files")
     args = parser.parse_args()
 
+    # Verify if the Dataset file exists
+    if not os.path.exists(args.dataset_file):
+        raise FileNotFoundError(f"Dataset file {args.dataset_file} does not exist.")
+
+    # Create the output directory (if it not already the case)
     os.makedirs(args.output_dir, exist_ok=True)
+
+    # Unique name for training generated files
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    metrics_file = os.path.join(args.output_dir, f"metrics_hd{args.hidden_dim}_n{args.num_layers}_lr{args.learning_rate}_{timestamp}.csv")
-    best_model_file = os.path.join(args.output_dir, f"best_model_hd{args.hidden_dim}_n{args.num_layers}_lr{args.learning_rate}_{timestamp}.pt")
-    conf_matrix_file = os.path.join(args.output_dir, f"confusion_matrix_hd{args.hidden_dim}_n{args.num_layers}_lr{args.learning_rate}_{timestamp}.png")
+    marker = f"hd{args.hidden_dim}_n{args.num_layers}_lr{args.learning_rate}_{timestamp}"
 
-    h5_path = 'trajectory_data.h5'
-    if args.regen_data or not os.path.exists(h5_path):
-        print("Generating and saving new data...")
-        # TODO: Add kwargs
-        generate_and_save_data(
-            filepath=h5_path,
-            n_samples=15_000,           # Number of trajectories
-            traj_length=[15, 10 * 60]   # seconds
-        )
-    
-    # Prepare dataset and data loaders
-    full_dataset = TrajectoryDataset(h5_path, 'train')
-    train_size = int(0.8 * len(full_dataset))
-    val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
-    test_dataset = TrajectoryDataset(h5_path, 'test')
+    metrics_file = os.path.join(args.output_dir, f"metrics_{marker}.csv")
+    best_model_file = os.path.join(args.output_dir, f"best_model_{marker}.pt")
+    conf_matrix_file = os.path.join(args.output_dir, f"confusion_matrix_{marker}.png")
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        collate_fn=collate_fn,
-        pin_memory=True,
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=args.batch_size,
-        shuffle=False,
-        collate_fn=collate_fn,
-        pin_memory=True,
-    )
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size=args.batch_size,
-        shuffle=False,
-        collate_fn=collate_fn,
-        pin_memory=True,
-    )
+    # Prepare dataloaders
+    train_loader, val_loader, test_loader = prepare_dataloaders(args.dataset_file, args.batch_size)
 
-    # Set device
+    # Instantiate the Trajectory LSTM model
     device = torch.device(args.device)
-
-    # Initialize the model
     model = TrajectoryClassifier(hidden_dim=args.hidden_dim, num_layers=args.num_layers).to(device)
 
-    # Optionally load a pretrained model if available
-    if os.path.exists(best_model_file):
-        print(f"Loading pretrained model from {best_model_file}...")
-        model.load_state_dict(torch.load(best_model_file, map_location=device))
-
-    # Training
-    if not args.eval_only:
+    # If evaluation-only mode is selected, require a pretrained model file
+    if args.eval_only:
+        if args.model_file is None:
+            raise ValueError("In eval_only mode, --model_file must be provided.")
+        if not os.path.exists(args.model_file):
+            raise FileNotFoundError(f"Model file {args.model_file} does not exist.")
+        print(f"Loading pretrained model from {args.model_file}...")
+        model.load_state_dict(torch.load(args.model_file, map_location=device))
+    else:
+        # Training a fresh model
         train_model(model, train_loader, val_loader, num_epochs=args.epochs,
                     learning_rate=args.learning_rate, metrics_file=metrics_file,
                     best_model_file=best_model_file, device=device)
 
-    # Saving training metric plot
-    plot_metrics(metrics_file=metrics_file, show_plot=False)
+        # Plot training metrics
+        plot_metrics(metrics_file=metrics_file, show_plot=False)
 
-    # Evaluation and confusion matrix
-    eval_model(model, test_loader, class_names=['MRU', 'MUA', 'Singer'],
-               save_path=conf_matrix_file, show_figure=False, device=device)
+    # Evaluate the model and plot the confusion matrix
+    evaluations = evaluate_model(model, test_loader, device=device)
+    plot_cm(evaluations, class_names=['MRU', 'MUA', 'Singer'], save_path=conf_matrix_file, show_figure=False)
 
 
 if __name__ == "__main__":

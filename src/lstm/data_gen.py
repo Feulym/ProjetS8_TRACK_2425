@@ -1,42 +1,60 @@
 import os
-import datetime
+import sys
 import argparse
 import h5py
 import numpy as np
+from typing import Tuple, List, TypedDict
+from tqdm import tqdm
 
-from typing import Tuple, List
+# Fix package import
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from package.common import trajectoire_XY
-from MRU import trajec_MRU
-from MUA import Trajec_MUA
-from Singer import traj_singer
+from package.mru import trajec_MRU
+from package.mua import Trajec_MUA
+from package.singer import traj_singer
 
 
-# ----------------------------
-# Data Generation Utilities
-# ----------------------------
-def generate_synthetic_trajectories(n_samples: int = 500, min_N: int = 50, max_N: int = 150,
-                                    Tech: float = 0.1, min_sigma2: float = 0.001, max_sigma2: float = 0.1,
-                                    min_tau:float = 1, max_tau: float = 300,
-                                    min_sigma_m2:float = 1e-4, max_sigma_m2:float = 1) \
-                                        -> Tuple[List[np.ndarray], List[int], np.ndarray]:
+class TrajectoryGenParams(TypedDict):
+    n_samples: int
+    min_N: int
+    max_N: int
+    Tech: float
+    min_sigma2: float
+    max_sigma2: float
+    min_tau: float
+    max_tau: float
+    min_sigma_m2: float
+    max_sigma_m2: float
+
+
+def generate_synthetic_trajectories(params: TrajectoryGenParams) -> Tuple[List[np.ndarray], List[int], np.ndarray]:
     """
-    Generate synthetic trajectories.
-    
+    Generate synthetic trajectories based on provided parameters.
+
     Args:
-        n_samples: Number of trajectories to generate
-        min_N/max_N: Min/max trajectory length
-        Tech: Sampling period
-        min_sigma2/max_sigma2: Min/max noise variance
-        min_tau/max_tau: Min/max maneuver time (Singer model)
-        min_sigma_m2/max_sigma_m2: Min/max acceleration magnitude (Singer model)
-    
+        params: A dictionary containing trajectory generation parameters.
+
     Returns:
-        tuple: (trajectories, labels, lengths)
+        trajectories: List of trajectory arrays.
+        labels: List of trajectory labels.
+        lengths: Array of trajectory lengths.
     """
+    n_samples = params["n_samples"]
+    min_N = params["min_N"]
+    max_N = params["max_N"]
+    Tech = params["Tech"]
+    min_sigma2 = params["min_sigma2"]
+    max_sigma2 = params["max_sigma2"]
+    min_tau = params["min_tau"]
+    max_tau = params["max_tau"]
+    min_sigma_m2 = params["min_sigma_m2"]
+    max_sigma_m2 = params["max_sigma_m2"]
+
     trajectories = []
     labels = []
-    lengths = np.random.randint(min_N, max_N, size=n_samples, dtype=np.int32)
 
+    lengths = np.random.randint(min_N, max_N + 1, size=n_samples, dtype=np.int32)
     traj_types = np.random.choice([0, 1, 2], size=n_samples)  # 0=MRU, 1=MUA, 2=Singer
     sigma2_values = np.random.uniform(min_sigma2, max_sigma2, size=n_samples)
     
@@ -45,28 +63,26 @@ def generate_synthetic_trajectories(n_samples: int = 500, min_N: int = 50, max_N
     n_singer = np.sum(singer_mask)
     if n_singer > 0:
         tau_values = np.random.uniform(min_tau, max_tau, size=n_singer)
-        sigma_m2_values = np.random.uniform(min_sigma_m2, max_sigma_m2, size=n_singer)  
+        sigma_m2_values = np.random.uniform(min_sigma_m2, max_sigma_m2, size=n_singer)
     singer_idx = 0
 
     for i in range(n_samples):
         L = lengths[i]
         sigma2 = sigma2_values[i]
-        noise = np.random.normal(0, 12, (L, 2))  # GPS noise: +/-10m
+        noise = np.random.normal(0, 12, (L, 2))  # GPS noise: approx ±10m
         
-        if traj_types[i] == 2:  # Singer
+        if traj_types[i] == 2:  # Singer model
             tau = tau_values[singer_idx]
             sigma_m2 = sigma_m2_values[singer_idx]
             singer_idx += 1
-            
+
             alpha = 1 / tau
             new_sigma2 = 2 * alpha * sigma_m2
-            
+
             _, X, _, Y = trajectoire_XY(traj_singer, L, Tech, new_sigma2, alpha)
-            
-        elif traj_types[i] == 1:    # MUA
+        elif traj_types[i] == 1:  # MUA model
             _, X, _, Y = trajectoire_XY(Trajec_MUA, L, Tech, sigma2)
-            
-        else:   # MRU
+        else:  # MRU model
             _, X, _, Y = trajectoire_XY(trajec_MRU, L, Tech, sigma2)
 
         traj = np.stack((X[0, :], Y[0, :]), axis=1) + noise
@@ -76,64 +92,86 @@ def generate_synthetic_trajectories(n_samples: int = 500, min_N: int = 50, max_N
     return trajectories, labels, lengths
 
 
-def generate_and_save_data(filepath: str, n_samples: int = 200_000, traj_length: List[int] = [15, 3600], batch_size=1_000):
+def generate_and_save_data(filepath: str, params: TrajectoryGenParams, batch_size: int = 1000) -> None:
     """
     Generate synthetic trajectory data and save it to an HDF5 file.
-    
-    The data is split into training (80%) and testing (20%) sets.
+
+    The dataset is saved as a unified dataset with keys:
+      - "trajectories": Padded trajectory data.
+      - "labels": Trajectory labels.
+      - "lengths": Original lengths of each trajectory.
+      
+    Args:
+        filepath: Path to save the HDF5 file.
+        params: A dictionary of generation parameters.
+        batch_size: Number of samples to generate per batch.
     """
-    
-    train_size = int(0.8 * n_samples)
-    test_size = n_samples - train_size
-    min_seq_len, max_seq_len = traj_length
-    
+    total_samples = params["n_samples"]
+    max_seq_len = params["max_N"]
+
     with h5py.File(filepath, 'w') as f:
-        train_group = f.create_group('train')
-        test_group = f.create_group('test')
+        ds_trajectories = f.create_dataset("trajectories", shape=(total_samples, max_seq_len, 2), dtype="float32")
+        ds_labels = f.create_dataset("labels", shape=(total_samples,), dtype="uint8")
+        ds_lengths = f.create_dataset("lengths", shape=(total_samples,), dtype="int32")
+        
+        num_batches = (total_samples + batch_size - 1) // batch_size
+        sample_counter = 0
+        
+        # Create a copy of the parameters to modify the current batch size.
+        batch_params = params.copy()
 
-        train_trajectories = train_group.create_dataset('trajectories', shape=(train_size, max_seq_len, 2), dtype='float32')
-        train_labels = train_group.create_dataset('labels', (train_size,), dtype='uint8')
-        train_lengths = train_group.create_dataset('lengths', (train_size,), dtype='int32')
-
-        test_trajectories = test_group.create_dataset('trajectories', shape=(test_size, max_seq_len, 2), dtype='float32')
-        test_labels = test_group.create_dataset('labels', (test_size,), dtype='uint8')
-        test_lengths = test_group.create_dataset('lengths', (test_size,), dtype='int32')
-
-        for i in tqdm(range(0, n_samples, batch_size), desc="Generating data"):
-            current_batch_size = min(batch_size, n_samples - i)
-            trajectories, labels, lengths = generate_synthetic_trajectories(
-                # TODO: kwargs
-                n_samples=current_batch_size,
-                min_N=min_seq_len,
-                max_N=max_seq_len,
-                Tech=1
-            )
+        for _ in tqdm(range(num_batches), desc="Generating data"):
+            current_batch_size = min(batch_size, total_samples - sample_counter)
+            batch_params["n_samples"] = current_batch_size
             
+            trajectories, labels, lengths = generate_synthetic_trajectories(batch_params)
+            
+            # Pad each trajectory to have the same length (max_seq_len)
             padded_trajectories = np.array([
                 np.pad(traj, ((0, max_seq_len - len(traj)), (0, 0)), mode='constant')
                 for traj in trajectories
-            ], dtype='float32')
+            ], dtype="float32")
+            
+            ds_trajectories[sample_counter:sample_counter + current_batch_size] = padded_trajectories
+            ds_labels[sample_counter:sample_counter + current_batch_size] = labels
+            ds_lengths[sample_counter:sample_counter + current_batch_size] = lengths
+            
+            sample_counter += current_batch_size
 
-            if i + current_batch_size <= train_size:    # If still in the training set
-                dataset_traj, dataset_labels, dataset_lengths = train_trajectories, train_labels, train_lengths
-                idx_start, idx_end = i, i + current_batch_size
-            elif i >= train_size:   # If in the test set
-                dataset_traj, dataset_labels, dataset_lengths = test_trajectories, test_labels, test_lengths
-                idx_start, idx_end = i - train_size, i - train_size + current_batch_size
-            else:   # If batch spans training and test set
-                train_end = train_size - i
-                test_end = current_batch_size - train_end
 
-                train_trajectories[i:i + train_end] = padded_trajectories[:train_end]
-                train_labels[i:i + train_end] = labels[:train_end]
-                train_lengths[i:i + train_end] = lengths[:train_end]
+def main():
+    parser = argparse.ArgumentParser(description="Generate synthetic trajectory data.")
+    parser.add_argument("--output_file", type=str, required=True, help="Output HDF5 file path.")
+    parser.add_argument("--n_samples", type=int, default=200_000, help="Total number of trajectories.")
+    parser.add_argument("--min_N", type=int, default=15, help="Minimum trajectory length.")
+    parser.add_argument("--max_N", type=int, default=3600, help="Maximum trajectory length.")
+    parser.add_argument("--Tech", type=float, default=1.0, help="Sampling period.")
+    parser.add_argument("--min_sigma2", type=float, default=0.001, help="Minimum noise variance.")
+    parser.add_argument("--max_sigma2", type=float, default=0.1, help="Maximum noise variance.")
+    parser.add_argument("--min_tau", type=float, default=1, help="Minimum maneuver time (Singer model).")
+    parser.add_argument("--max_tau", type=float, default=300, help="Maximum maneuver time (Singer model).")
+    parser.add_argument("--min_sigma_m2", type=float, default=1e-4, help="Minimum acceleration magnitude (Singer model).")
+    parser.add_argument("--max_sigma_m2", type=float, default=1, help="Maximum acceleration magnitude (Singer model).")
+    parser.add_argument("--batch_size", type=int, default=1000, help="Batch size for generation.")
+    args = parser.parse_args()
+    
+    # Build generation parameters using the TypedDict.
+    gen_params: TrajectoryGenParams = {
+        "n_samples": args.n_samples,
+        "min_N": args.min_N,
+        "max_N": args.max_N,
+        "Tech": args.Tech,
+        "min_sigma2": args.min_sigma2,
+        "max_sigma2": args.max_sigma2,
+        "min_tau": args.min_tau,
+        "max_tau": args.max_tau,
+        "min_sigma_m2": args.min_sigma_m2,
+        "max_sigma_m2": args.max_sigma_m2
+    }
+    
+    generate_and_save_data(args.output_file, gen_params, batch_size=args.batch_size)
+    print(f"Data successfully saved to {args.output_file}")
 
-                test_trajectories[0:test_end] = padded_trajectories[train_end:]
-                test_labels[0:test_end] = labels[train_end:]
-                test_lengths[0:test_end] = lengths[train_end:]
-                continue  # Skip rest of loop for this iteration
 
-            dataset_traj[idx_start:idx_end] = padded_trajectories
-            dataset_labels[idx_start:idx_end] = labels
-            dataset_lengths[idx_start:idx_end] = lengths
-
+if __name__ == "__main__":
+    main()
