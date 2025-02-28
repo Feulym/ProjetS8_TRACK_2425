@@ -42,10 +42,31 @@ nav ul li a {
 nav ul li a:hover {
     text-decoration: underline;
 }
+
+
 main {
     padding: 2rem;
     text-align: center;
 }
+
+.logos {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.bulle {
+    width: 800px;
+    opacity: 90%;
+    border-radius: 42px;
+    padding: 1rem;
+    background-color: #CAF0F8;
+}
+
+
 section {
     background-color: #f4f4f4;
     padding: 2rem;
