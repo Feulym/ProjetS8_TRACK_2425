@@ -5,8 +5,12 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 from torch.utils.data import Dataset, DataLoader
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+
+from arfima import simulate_arfima
+
 
 # Set random seeds for reproducibility
 torch.manual_seed(0)
@@ -22,7 +26,7 @@ class MemoryDataset(Dataset):
         Three classes:
           0: No memory (white noise)
           1: Short memory (AR(1) with coefficient 0.5)
-          2: Long memory (AR(1) with coefficient 0.99)
+          2: Long memory (ARFIMA(1,d,1) with d=0.4)
         """
         self.data = []
         self.labels = []
@@ -39,10 +43,12 @@ class MemoryDataset(Dataset):
                     for t in range(1, seq_length):
                         seq[t] = 0.5 * seq[t - 1] + np.random.randn()
                 elif label == 2:
-                    # AR(1) with near unit root: long memory
-                    seq = np.zeros(seq_length)
-                    for t in range(1, seq_length):
-                        seq[t] = 0.99 * seq[t - 1] + np.random.randn()
+                    ar = [0.5]     # AR(1) parameter
+                    d = 0.4        # fractional integration parameter
+                    ma = [-0.1]    # MA(1) parameter
+
+                    seq = simulate_arfima(seq_length, ar, d, ma)
+
                 self.data.append(seq)
                 self.labels.append(label)
 
@@ -149,21 +155,35 @@ print(f"Test Accuracy: {test_accuracy:.4f}")
 # 4. Plot samples for each class 
 # =============================================================================
 
-def plot_sample(dataset, class_label, num_samples=3):
+def plot_acf_pacf(dataset, class_label, num_samples=3, lags=50):
+    """
+    Plot the autocorrelation and partial autocorrelation functions
+    for a few samples from the dataset corresponding to the given class label.
+    """
     indices = np.where(dataset.labels == class_label)[0][:num_samples]
-    plt.figure(figsize=(12, 3))
-    for i, idx in enumerate(indices):
+    class_names = ["No-memory", "Short Term Memory", "Long Term Memory"]
+    
+    for idx in indices:
         seq, label = dataset[idx]
-        plt.subplot(1, num_samples, i+1)
-        plt.plot(seq, marker='o', linestyle='-')
-        plt.title(f"Class {label}")
-        plt.xlabel("Time")
-        plt.ylabel("Value")
-    plt.tight_layout()
-    plt.show()
+        # Flatten the sequence for plotting (remove the extra singleton dimension)
+        seq = seq.squeeze()
+        
+        plt.figure(figsize=(14, 4))
+        # ACF plot
+        plt.subplot(1, 2, 1)
+        plot_acf(seq, lags=lags, ax=plt.gca())
+        plt.title(f"ACF - {class_names[label]}")
+        
+        # PACF plot
+        plt.subplot(1, 2, 2)
+        plot_pacf(seq, lags=lags, ax=plt.gca(), method='ywm')
+        plt.title(f"PACF - {class_names[label]}")
+        
+        plt.tight_layout()
+        plt.show()
 
 for class_label in [0, 1, 2]:
-    plot_sample(train_dataset, class_label)
+    plot_acf_pacf(train_dataset, class_label, num_samples=1, lags=50)
 
 # =============================================================================
 # 5. Extract hidden states from the test set for visualization
@@ -208,7 +228,7 @@ plt.ylabel("Principal Component 2")
 plt.legend()
 plt.show()
 
-# --- Cercle des corrélations ---
+# --- Correlation circle ---
 components = pca.components_[:2]    # shape: (2, n_features)
 eigenvalues = pca.explained_variance_[:2]   # shape: (2,)
 
