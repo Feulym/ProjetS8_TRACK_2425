@@ -90,7 +90,7 @@ def plot_vectetat(t1, X, t2=None, Y=None):
     plt.tight_layout()
     plt.show()
 
-def multi_trajectoire(M, fonction_type, N, Tech, sigma2, alpha=None, PLOT=True):
+def multi_trajectoire(M, fonction_type, N, Tech, sigma2, alpha=None, PLOT=False):
     """
     Parameters
     ----------

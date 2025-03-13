@@ -53,17 +53,52 @@ main {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 2rem;
+    gap: 10rem;
     padding-top: 1rem;
     padding-bottom: 1rem;
+    margin-top: 5rem;  
 }
 
 .bulle {
     width: 800px;
     opacity: 90%;
     border-radius: 42px;
-    padding: 1rem;
-    background-color: #CAF0F8;
+    padding: 2rem;
+    background-color: rgba(202, 240, 248, 0.9); /* 50% de transparence */
+}
+
+.bulle h2{
+    font-size: 30px;
+}
+
+.bulle p{
+    font-size: 20px;
+}
+
+.superposed{
+    display: grid;
+    place-items: center;
+    position: relative;
+    background: radial-gradient(circle, rgba(202, 240, 248, 0.5) 0%, rgba(202, 240, 248, 0) 60%);
+    padding: 2rem;
+}
+
+.title{
+    display: flex;
+    flex-direction: column;
+}
+
+.superposed > * {
+    grid-area: 1 / 1; /* Place tous les éléments au même endroit */
+}
+
+.title h2{
+    font-size: 40px;
+    color: white;
+}
+
+.photo {
+    border-radius: 42px;
 }
 
 

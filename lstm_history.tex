@@ -1,0 +1,43 @@
+\documentclass{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+
+\title{Histoire du LSTM}
+\author{}
+\date{}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+% Slide 1: Introduction à l'histoire du LSTM
+\begin{frame}{Origine des RNN et limites}
+    \begin{itemize}
+        \item Les réseaux de neurones récurrents (RNN) ont été développés dans les années 1980.
+        \item Leur objectif : modéliser des séquences de données temporelles.
+        \item Problèmes majeurs :
+        \begin{itemize}
+            \item Disparition et explosion du gradient.
+            \item Difficulté à capturer des dépendances à long terme.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% Slide 2: Naissance du LSTM
+\begin{frame}{Naissance du LSTM (1997)}
+    \begin{itemize}
+        \item En 1997, \textbf{Sepp Hochreiter} et \textbf{Jürgen Schmidhuber} proposent le Long Short-Term Memory (LSTM).
+        \item Solution aux limitations des RNN classiques grâce à un mécanisme de portes :
+        \begin{itemize}
+            \item Porte d’oubli : contrôle quelles informations doivent être effacées.
+            \item Porte d’entrée : régule les nouvelles informations stockées.
+            \item Porte de sortie : décide quelles informations transmettre à l’étape suivante.
+        \end{itemize}
+        \item Initialement peu utilisé, il devient populaire avec l’essor du deep learning et des capacités de calcul accrues.
+    \end{itemize}
+\end{frame}
+
+\end{document}

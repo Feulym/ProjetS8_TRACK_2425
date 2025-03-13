@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRACK!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #002244, #004488);
+            color: white;
+            text-align: center;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 50px;
+            background: white;
+            color: black;
+        }
+        .navbar a {
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+            margin: 0 15px;
+        }
+        .hero {
+            padding: 80px 20px;
+            text-align: left;
+            max-width: 900px;
+            margin: auto;
+            position: relative;
+        }
+        .hero h1 {
+            font-size: 50px;
+            font-weight: bold;
+        }
+        .hero p {
+            font-size: 20px;
+        }
+        .content-box {
+            background: rgba(202, 240, 248, 0.8);
+            color: black;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 20px auto;
+            text-align: left;
+        }
+        .team-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 40px 20px;
+        }
+        .team-text {
+            max-width: 600px;
+            background: rgba(202, 240, 248, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            color: black;
+            text-align: left;
+        }
+        .team-image img {
+            max-width: 350px;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">TRACK!</div>
+        <div class="nav-links">
+            <a href="#">HOME</a>
+            <a href="#">TEAM</a>
+            <a href="#">DEMO</a>
+            <a href="#">PROJECT</a>
+        </div>
+    </div>
+    
+    <div class="hero">
+        <h1>TRACK!</h1>
+        <p>Battleship, but 2 steps ahead</p>
+    </div>
+    
+    <div class="content-box">
+        <h2>Trajectory Research: Analysis, Classification, and Knowledge-building</h2>
+        <p>In numerous applications (GPS navigation, object tracking using radar systems, vehicle tracking in videos)...</p>
+    </div>
+    
+    <div class="team-section">
+        <div class="team-text">
+            <h2>Meet the Team Behind TRACK!</h2>
+            <p>We are a team of second-year Telecommunications students at ENSEIRB-MATMECA...</p>
+        </div>
+        <div class="team-image">
+            <img src="team-image.jpg" alt="Team Photo">
+        </div>
+    </div>
+</body>
+</html>
