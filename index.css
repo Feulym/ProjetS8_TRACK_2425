@@ -60,11 +60,17 @@ main {
 }
 
 .bulle {
-    width: 800px;
+    display: flex;
+    flex-direction: column;
+    text-align: justify;
+    gap: 1.5rem;
+    width: 900px;
     opacity: 90%;
     border-radius: 42px;
     padding: 2rem;
     background-color: rgba(202, 240, 248, 0.9); /* 50% de transparence */
+    box-shadow: 0 0 10px #4D94C0, 0 0 20px #4D94C0, 0 0 30px #4D94C0;
+    transition: box-shadow 0.3s ease-in-out;
 }
 
 .bulle h2{
