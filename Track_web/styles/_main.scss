@@ -11,7 +11,7 @@ header {
     background-color: $white;
     padding: 1rem 0;
     text-align: center;
-}
+}   
 nav{
     display: flex;
     justify-content: center;
@@ -86,7 +86,7 @@ main {
     display: grid;
     place-items: center;
     position: relative;
-    background: radial-gradient(circle, $bulle-transparente 0%, $bulle-transparente 60%);
+    background: radial-gradient(circle, $bulle-transparente 0%, rgba(255,255,255,0) 60%);
     padding: 2rem;
 }
 
