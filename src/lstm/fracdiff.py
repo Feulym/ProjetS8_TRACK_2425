@@ -33,7 +33,7 @@ def _acv_frac_diff(k, d):
     For small lags (< 50) the autocovariance is computed directly using:
         acv[k] = gamma(1+2*d) / (gamma(1+d)**2) * (gamma(k-d) / gamma(k+1+d))
     For larger lags, a stable recursive formula is applied:
-        acv[k] = acv[k-1] * ((k-1-d)/(k+d))
+        acv[k] = acv[k-1] * ((k-1-d)/(k))
 
     Parameters:
         k (int or np.ndarray): Lag value(s).
