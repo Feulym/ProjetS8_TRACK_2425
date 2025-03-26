@@ -109,6 +109,7 @@ main {
 
 .photo {
   border-radius: 42px;
+  width: 50%;
 }
 
 section {
@@ -117,6 +118,19 @@ section {
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   display: inline-block;
+}
+
+.vecteurs {
+  width: 80%;
+}
+
+h1 {
+  color: #FFFFFF;
+  font-size: 80px;
+}
+
+.photo {
+  margin-bottom: 50px;
 }
 
 /*# sourceMappingURL=team.css.map */
