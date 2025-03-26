@@ -42,12 +42,13 @@ def mean_22(X):
     return np.mean(abs(X-X_2))
 
 def add_Noise(traj, mu_X=0, var_X=None, mu_Y=0, var_Y=None):
+    """
+    Adding a gaussian noise to the 2 trajectories of the matrix traj (of shape (L,2))
+    """
     if var_X == None :
         var_X=mean_22(traj[:,0])
     if var_Y == None :
         var_Y=mean_22(traj[:,1])
-
-    print(var_X,var_Y)
 
     noise_X = np.random.normal(mu_X, var_X, (traj[:,0].shape[0], 1))  # GPS noise linked to the trajectory magnitude
     noise_Y = np.random.normal(mu_Y, var_Y, (traj[:,1].shape[0], 1))
@@ -104,15 +105,13 @@ def generate_synthetic_trajectories(params: TrajectoryGenParams) -> Tuple[List[n
             new_sigma2 = 2 * alpha * sigma_m2
 
             _, X, _, Y = trajectoire_XY(traj_singer, L, Tech, new_sigma2, alpha)
-            print("Singer mean", np.mean(X), np.mean(Y))
         elif traj_types[i] == 1:  # MUA model
             _, X, _, Y = trajectoire_XY(Trajec_MUA, L, Tech, sigma2)
-            print("MUA mean", np.mean(X), np.mean(Y))
         else:  # MRU model
             _, X, _, Y = trajectoire_XY(trajec_MRU, L, Tech, sigma2)
-            print("MRU mean", np.mean(X), np.mean(Y))
 
         traj = np.stack((X[0, :], Y[0, :]), axis=1)
+        
         if params["noised"]:
             traj = add_Noise(traj)
 
