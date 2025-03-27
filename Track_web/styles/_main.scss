@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800&display=swap');
+@import "base/variables";
+
+
+body {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background-color: $back-color;
+}
+header {
+    background-color: $white;
+    padding: 1rem 0;
+    text-align: center;
+}   
+nav{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 25rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    gap: 15rem;
+}
+nav a {
+    color: black;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.7em;
+}
+nav ul li a {
+    color: black;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+nav ul li a:hover {
+    text-decoration: underline;
+}
+
+
+main {
+    padding: 2rem;
+    text-align: center;
+}
+
+.logos {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    margin-top: 5rem;  
+}
+
+.bulle {
+    display: flex;
+    flex-direction: column;
+    text-align: justify;
+    gap: 1.5rem;
+    width: 900px;
+    opacity: 90%;
+    border-radius: 42px;
+    padding: 2rem;
+    background-color: $bulle-transparente;
+    box-shadow: 0 0 10px $secondary-color, 0 0 20px $secondary-color, 0 0 30px $secondary-color;
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.bulle h2{
+    font-size: 30px;
+}
+
+.bulle p{
+    font-size: 20px;
+}
+
+.superposed{
+    display: grid;
+    place-items: center;
+    position: relative;
+    background: radial-gradient(circle, $bulle-transparente 0%, rgba(255,255,255,0) 60%);
+    padding: 2rem;
+}
+
+.title{
+    display: flex;
+    flex-direction: column;
+}
+
+.superposed > * {
+    grid-area: 1 / 1; /* Place tous les éléments au même endroit */
+}
+
+.title h2{
+    font-size: 40px;
+    color: white;
+}
+
+.photo {
+    border-radius: 42px;
+    width: 50%;
+}
+
+
+section {
+    background-color: $white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px $black-transparente;;
+    display: inline-block;
+}
