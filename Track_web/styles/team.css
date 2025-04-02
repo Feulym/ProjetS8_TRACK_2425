@@ -119,4 +119,9 @@ section {
   display: inline-block;
 }
 
+.photo {
+  border-radius: 42px;
+  width: 90rem;
+}
+
 /*# sourceMappingURL=team.css.map */
