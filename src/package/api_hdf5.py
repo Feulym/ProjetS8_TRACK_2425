@@ -56,7 +56,7 @@ def create_hdf5(filename, trajectoires, classes):
             # Créer un dataset pour la trajectoire
             dset = hdf.create_dataset(traj_name, data=traj)
             # Ajouter un attribut pour stocker la classe associée
-            dset.attrs["classe"] = classes[compteur-1]
+            dset.attrs["labels"] = classes[compteur-1]
 
     print(f"Fichier HDF5 '{filename}' contenant '{compteur}' trajectoires créé avec succès.")
     
@@ -91,7 +91,7 @@ def add_trajectories(filename, trajectoires, classes):
             # Créer un dataset pour la trajectoire
             dset = hdf.create_dataset(traj_name, data=traj)
             # Ajouter un attribut pour stocker la classe associée
-            dset.attrs["classe"] = classes[done]
+            dset.attrs["labels"] = classes[done]
             
             done += 1
 
@@ -104,25 +104,21 @@ def read_hdf5(filename):
     Charge toutes les trajectoires et leurs classes depuis un fichier HDF5.
     
     :param filepath: Chemin vers le fichier HDF5.
-    :return: Deux listes - liste des trajectoires (listes de numpy arrays) et liste des classes associées.
+    :return: traj, lengths, labels
     """
     
     liste_traj = []
     liste_classes = []
-    done = 0
     
     with h5py.File(filename, "r") as hdf:
-        for nom in hdf.keys():
-            dset = hdf[nom]
-            traj = dset[:]
-            classe = dset.attrs["classe"]
-            liste_traj.append(traj)
-            liste_classes.append(classe)
-            done += 1
+        # Access a specific dataset
+        labels = hdf["labels"][:]
+        lengths = hdf["lengths"][:]
+        traj = hdf["trajectories"][:]
             
-    print(f"'{done}' trajectoires du fichier '{filename}' lues avec succès")
+    print(f"'{traj.shape[0]}' trajectoires du fichier '{filename}' lues avec succès")
             
-    return liste_traj, liste_classes
+    return traj, lengths, labels
 
 
 

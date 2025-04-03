@@ -1,3 +1,6 @@
 __pycache__
 *.tex~
 .env
+*.pth
+*.zip
+data_*
