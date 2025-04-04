@@ -3,4 +3,5 @@ __pycache__
 .env
 /node_modules
 sujet3_projetS8.pdf
-
+Demo/env
+.idea
