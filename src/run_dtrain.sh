@@ -3,8 +3,9 @@
 MACHINES=("machine1" "machine2" "machine3")
 
 # Dossier du projet sur la machine distante
-REMOTE_DIR="/chemin/vers/votre/projet"
-EXEC="nom_executable.ext"
+REMOTE_DIR="/chemin/vers/le/projet"  # exemple : /home/<username>/Projets/Projet_S8_TRACK_2425 
+EXEC="nom_executable.ext"   # exemple : src/lstm/lstm_train.py
+DATASET="/chemin/vers/le/dataset"   # exemple : data/dataset.h5
 
 # Hyperparamètres fixes
 EPOCHS=50
@@ -27,6 +28,7 @@ for LEARNING_RATE in "${LEARNING_RATES[@]}"; do
             echo "Lancement sur $MACHINE avec learning_rate=$LEARNING_RATE, hidden_dim=$HIDDEN_DIM, num_layers=$NUM_LAYER"
             
             ssh "$MACHINE" "cd $REMOTE_DIR && source .env/bin/activate && python $EXEC \
+                --dataset_file $DATASET \
                 --epochs $EPOCHS \
                 --batch_size $BATCH_SIZE \
                 --learning_rate $LEARNING_RATE \
