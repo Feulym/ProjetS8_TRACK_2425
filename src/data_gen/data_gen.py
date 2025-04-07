@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 from typing import Tuple, List, TypedDict
 from tqdm import tqdm
-
+import matplotlib.pyplot as plt
 # Fix package import
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -26,7 +26,34 @@ class TrajectoryGenParams(TypedDict):
     max_tau: float
     min_sigma_m2: float
     max_sigma_m2: float
+    noised: bool
 
+def mean_22(X):
+    """
+    Compute the mean of the gap between two consecutive values 
+    Args:
+        X : A Vector off which we want to get the gap mean
+    
+    Returns:
+        Mean of the gaps
+    """
+    X_2 = np.array([0])
+    X_2 = np.concatenate((X_2, X[:-1]))
+    return np.mean(abs(X-X_2))
+
+def add_Noise(traj, mu_X=0, var_X=None, mu_Y=0, var_Y=None):
+    """
+    Adding a gaussian noise to the 2 trajectories of the matrix traj (of shape (L,2))
+    """
+    if var_X == None :
+        var_X=mean_22(traj[:,0])
+    if var_Y == None :
+        var_Y=mean_22(traj[:,1])
+
+    noise_X = np.random.normal(mu_X, var_X, (traj[:,0].shape[0], 1))  # GPS noise linked to the trajectory magnitude
+    noise_Y = np.random.normal(mu_Y, var_Y, (traj[:,1].shape[0], 1))
+    noise = np.stack((noise_X[:, 0], noise_Y[:, 0]), axis=1)
+    return traj + noise
 
 def generate_synthetic_trajectories(params: TrajectoryGenParams) -> Tuple[List[np.ndarray], List[int], np.ndarray]:
     """
@@ -69,8 +96,6 @@ def generate_synthetic_trajectories(params: TrajectoryGenParams) -> Tuple[List[n
     for i in range(n_samples):
         L = lengths[i]
         sigma2 = sigma2_values[i]
-        noise = np.random.normal(0, 12, (L, 2))  # GPS noise: approx ±10m
-        
         if traj_types[i] == 2:  # Singer model
             tau = tau_values[singer_idx]
             sigma_m2 = sigma_m2_values[singer_idx]
@@ -85,10 +110,13 @@ def generate_synthetic_trajectories(params: TrajectoryGenParams) -> Tuple[List[n
         else:  # MRU model
             _, X, _, Y = trajectoire_XY(trajec_MRU, L, Tech, sigma2)
 
-        traj = np.stack((X[0, :], Y[0, :]), axis=1) + noise
+        traj = np.stack((X[0, :], Y[0, :]), axis=1)
+        
+        if params["noised"]:
+            traj = add_Noise(traj)
+
         trajectories.append(traj)
         labels.append(traj_types[i])
-    
     return trajectories, labels, lengths
 
 
@@ -153,6 +181,7 @@ def main():
     parser.add_argument("--min_sigma_m2", type=float, default=1e-4, help="Minimum acceleration magnitude (Singer model).")
     parser.add_argument("--max_sigma_m2", type=float, default=1, help="Maximum acceleration magnitude (Singer model).")
     parser.add_argument("--batch_size", type=int, default=1000, help="Batch size for generation.")
+    parser.add_argument("--noised", type=int, default=0, help="Generate Noised or Unnoised trajectories")
     args = parser.parse_args()
     
     # Build generation parameters using the TypedDict.
@@ -166,7 +195,8 @@ def main():
         "min_tau": args.min_tau,
         "max_tau": args.max_tau,
         "min_sigma_m2": args.min_sigma_m2,
-        "max_sigma_m2": args.max_sigma_m2
+        "max_sigma_m2": args.max_sigma_m2,
+        "noised": True if args.noised == 1 else False
     }
     
     generate_and_save_data(args.output_file, gen_params, batch_size=args.batch_size)
