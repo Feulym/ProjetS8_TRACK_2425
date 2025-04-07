@@ -98,6 +98,7 @@ def frac_diff(x, d):
     Returns:
         np.ndarray: The fractional difference of the time series.
     """
+    if d == 0: return x
     N = len(x)
     w = _frac_weights(N, d)
     # Note: conv or np.dot(w[:t+1], x[t::-1]) is possible
@@ -149,7 +150,7 @@ if __name__ == "__main__":
 
     np.random.seed(42)
     max_lags = 50
-    N = 2_000
+    N = 6_000
     d = -0.4
 
     white_noise = np.random.normal(0, 1, N)
