@@ -48,6 +48,7 @@ class Boat:
         self.type = boat_type
         self.trajectoire = trajectoire
         self.color = color
+        self.vitesse_moyenne = 0
         
     def toString(self):
         return self.name + "\nVitesse: " + str(self.vitesse) + "\nType: " + self.type.value
@@ -69,6 +70,7 @@ class InfoCard:
         lines = [
             self.bateau.name,
             f"Vitesse: {self.bateau.vitesse:.2f} nds",
+            f"Vmoy: {self.bateau.vitesse_moyenne:.2f} nds",
             f"Type: {self.bateau.type.value}"
         ]
         
@@ -138,6 +140,7 @@ def is_trajectory_in_white_area(trajectory: np.ndarray, image: np.ndarray) -> bo
 
 liste_bateaux = []
 liste_vitesses = [[] for _ in range(NBRBOAT)]
+liste_vitesses_moyenne = [[] for _ in range(NBRBOAT)]
 info_cards = []
 
 button = Button(WIDTH - 170, HEIGHT - 70, 150, 50, "Rejouer")
@@ -159,6 +162,7 @@ for i in range(NBRBOAT):
     
     # Calcul des vitesses
     liste_vitesses[i] = trajectories.calc_vitesse(traj)
+    liste_vitesses_moyenne[i] = trajectories.calc_vitesse_moyenne(liste_vitesses[i])
     
     # Génération de la carte d'infos initiale
     card = InfoCard(200*i, 100, bateau)
@@ -186,8 +190,10 @@ while running:
         trajectory = bateau.trajectoire
         if trajectory_index < len(liste_vitesses[ii]):
             bateau.vitesse = liste_vitesses[ii][trajectory_index]
+            bateau.vitesse_moyenne = liste_vitesses_moyenne[ii][trajectory_index]
         else:
             bateau.vitesse = liste_vitesses[ii][-1]  # On garde la dernière valeur connue
+            bateau.vitesse_moyenne = liste_vitesses_moyenne[ii][-1]  # On garde la dernière valeur connue
 
         print(bateau.vitesse)
         
