@@ -1,5 +1,10 @@
 import random
 import numpy as np
+import math
+
+
+ECHELLE = 1 # 1 pixel sur l'image correspond à combien de km
+TE = 1  # Période d'échantillonage (temps entre 2 échantillons) (nécessaire pour claucler la vitesse)
 
 
 def generate_mru_trajectory(start, initial_velocity, num_points, sigma=0.5):
@@ -48,10 +53,31 @@ def generate_singer_trajectory(start, velocity, damping, num_points):
 
 
 
+# Calcule la vitesse à chaque instant en noeuds à partir d'une trajectoire
+def calc_vitesse(trajectory, batch_size=1):
+    
+    liste_vitesses = [0 for _ in range(len(trajectory))]
+    
+    for ii in range(1, len(trajectory)):
+        x1, y1 = trajectory[ii - 1]
+        x2, y2 = trajectory[ii]
+        distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)   # Calcul de la distance entre les 2 points successifs
+        vitesse = distance / TE                                 # Calcul de la vitesse en m/s
+        vitesse_noeuds = vitesse * 3600 / 1852                  # Conversion en noeuds
+        liste_vitesses[ii] = round(vitesse_noeuds)
+        
+    return liste_vitesses
 
 
-
-
+def calc_vitesse_moyenne(liste_vitesses):
+     
+    moyennes = []
+    somme = 0
+    for i, v in enumerate(liste_vitesses):
+        somme += v
+        moyennes.append(somme / (i + 1))
+        
+    return moyennes
 
 
 

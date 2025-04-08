@@ -14,6 +14,8 @@
 - [ ] Séparer le code en plus de fichiers pour une meilleure encapsulation
 - [ ] Rendre les MRU et les MUA aléatoires
 - [x] Ajout d'un bouton "Rejouer"
+- [ ] Mettre à jour la vitesse en continu
+- [ ] A la fin du tracé de la trajectoire, afficher la vitesse moyenne
 
 ## 🐞 Bugs connus
 

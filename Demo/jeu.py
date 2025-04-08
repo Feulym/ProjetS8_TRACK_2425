@@ -4,6 +4,9 @@ from faker import Faker
 import numpy as np
 import cv2
 import random
+import math
+
+from utils import *
 import trajectories
 
 
@@ -11,26 +14,13 @@ import trajectories
 BACKGROUND_IMAGE = "background_english_channel.png"
 NBRBOAT = 3
 COEFFNORM = 3
+VELOCITY = 5
 DELAY = 50  # Délai entre 2 images
 
 # Initialisation de Pygame et Faker
 pygame.init()
+pygame.display.set_caption("Démonstration TRACK!")
 fake = Faker('fr_FR')
-
-couleurs = [
-    ("Rouge", (255, 0, 0)),
-    ("Vert", (0, 255, 0)),
-    ("Bleu", (0, 0, 255)),
-    ("Jaune", (255, 255, 0)),
-    ("Cyan", (0, 255, 255)),
-    ("Magenta", (255, 0, 255)),
-    ("Orange", (255, 165, 0)),
-    ("Rose", (255, 192, 203)),
-    ("Violet", (128, 0, 128)),
-    ("Gris", (128, 128, 128))
-]
-BUTTON_COLOR = (0, 128, 0)
-BUTTON_HOVER_COLOR = (0, 150, 0)
 
 
 # Chargement de l'image de fond
@@ -38,21 +28,17 @@ background = pygame.image.load(BACKGROUND_IMAGE)
 image = cv2.imread(BACKGROUND_IMAGE, cv2.IMREAD_GRAYSCALE)
 WIDTH, HEIGHT = background.get_width(), background.get_height()
 
-# Création de la fenêtre avec la taille de l'image
+
+# Création de la fenêtre avec la taille de l'image et la police
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-
-# Couleurs
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-
-# Police
-font = pygame.font.Font(None, 24)
+font = pygame.font.Font(None, 24)   # Police
 
 
 class BateauType(Enum):
     CARGO = "Cargo"
     VOILIER = "Voilier"
     PECHE = "Bateau de pêche"
+
 
 # Classe pour les infos d'un bateau
 class Boat:
@@ -65,28 +51,33 @@ class Boat:
         
     def toString(self):
         return self.name + "\nVitesse: " + str(self.vitesse) + "\nType: " + self.type.value
-    
-        
+      
 
-# Classe pour les cartes d'information
 class InfoCard:
     def __init__(self, x, y, bateau):
         self.x = x
         self.y = y
-        self.text = bateau.toString()
+        self.bateau = bateau  # ← on garde le bateau, pas juste du texte
         self.width = 150
         self.height = 100
 
     def draw(self, screen):
         pygame.draw.rect(screen, WHITE, (self.x, self.y, self.width, self.height))
         pygame.draw.rect(screen, BLACK, (self.x, self.y, self.width, self.height), 2)
-        lines = self.text.split("\n")
+        
+        # Texte dynamique : on relit les infos à chaque fois
+        lines = [
+            self.bateau.name,
+            f"Vitesse: {self.bateau.vitesse:.2f} nds",
+            f"Type: {self.bateau.type.value}"
+        ]
+        
         for i, line in enumerate(lines):
             text_surface = font.render(line, True, BLACK)
             screen.blit(text_surface, (self.x + 5, self.y + 5 + i * 20))
+
             
-            
-            
+                     
 # Créer la classe Button
 class Button:
     def __init__(self, x, y, width, height, text, font_size=36):
@@ -115,7 +106,8 @@ class Button:
                 return True
         return False
             
-            
+
+# Vérifie si une trajectoire reste bien dans la zone balnche (= La mer)          
 def is_trajectory_in_white_area(trajectory: np.ndarray, image: np.ndarray) -> bool:
     """
     Vérifie si toutes les positions de la trajectoire sont dans des zones blanches de l'image.
@@ -138,8 +130,6 @@ def is_trajectory_in_white_area(trajectory: np.ndarray, image: np.ndarray) -> bo
     return True
 
 
-
-
 # # Exemple d'utilisation avec une trajectoire fictive
 # sample_trajectory = np.array([[500, 500], [600, 600], [700, 700]])
 # result = is_trajectory_in_white_area(sample_trajectory, image)
@@ -147,6 +137,7 @@ def is_trajectory_in_white_area(trajectory: np.ndarray, image: np.ndarray) -> bo
 
 
 liste_bateaux = []
+liste_vitesses = [[] for _ in range(NBRBOAT)]
 info_cards = []
 
 button = Button(WIDTH - 170, HEIGHT - 70, 150, 50, "Rejouer")
@@ -156,7 +147,7 @@ for i in range(NBRBOAT):
     
     # Génération de la trajectoire
     start_point = (500/COEFFNORM, 400/COEFFNORM)
-    velocity = (3, 1)
+    velocity = (random.randint(-VELOCITY, VELOCITY), random.randint(-VELOCITY, VELOCITY))
     num_points = 500//COEFFNORM
     traj = trajectories.generate_mru_trajectory(start_point, velocity, num_points)
     traj_norm = traj*COEFFNORM
@@ -166,12 +157,22 @@ for i in range(NBRBOAT):
     bateau = Boat(30, BateauType.CARGO, traj_norm, rgb)
     liste_bateaux.append(bateau)
     
-    # Génération de la carte d'infos
+    # Calcul des vitesses
+    liste_vitesses[i] = trajectories.calc_vitesse(traj)
+    
+    # Génération de la carte d'infos initiale
     card = InfoCard(200*i, 100, bateau)
     info_cards.append(card)
     
+    
+    
+###############################################
+###                                          ##
+### ---------- BOUCLE PRINCIPALE ------------##
+###                                          ##
+###############################################
 
-# Boucle principale
+
 running = True
 trajectory_index = 1  # On commence à afficher à partir du 2e point (index 1)
 
@@ -179,14 +180,25 @@ while running:
     screen.blit(background, (0, 0))
     
     # Dessiner la trajectoire progressivement
-    for bateau in liste_bateaux:
+    for ii in range(len(liste_bateaux)):
+        
+        bateau = liste_bateaux[ii]
         trajectory = bateau.trajectoire
+        if trajectory_index < len(liste_vitesses[ii]):
+            bateau.vitesse = liste_vitesses[ii][trajectory_index]
+        else:
+            bateau.vitesse = liste_vitesses[ii][-1]  # On garde la dernière valeur connue
+
+        print(bateau.vitesse)
         
         # Si la trajectoire a plus d'un point
         if len(trajectory) > 1:
             for i in range(trajectory_index):
                 if i < len(trajectory) - 1:  # S'assurer qu'on ne dépasse pas la fin
                     pygame.draw.line(screen, bateau.color, trajectory[i], trajectory[i + 1], 5)  # Dessiner la ligne
+
+        
+
 
     # Dessiner les cartes d'info
     for card in info_cards:
