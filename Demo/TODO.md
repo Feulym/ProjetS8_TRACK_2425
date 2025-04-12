@@ -9,8 +9,8 @@
 ## 🔌 Démo
 - [x] Tracer les trajectoires progressivement pour avoir la composante temporelle
 - [ ] Changer de carte background
-- [ ] Générer plusieurs types de mouvements (pas que MRU)
-- [ ] Jouer sur les paramètres
+- [x] Générer plusieurs types de mouvements (pas que MRU)
+- [ ] Jouer (beacoups) sur les paramètres
 - [ ] Séparer le code en plus de fichiers pour une meilleure encapsulation
 - [ ] Rendre les MRU et les MUA aléatoires
 - [x] Ajout d'un bouton "Rejouer"
@@ -18,7 +18,7 @@
 - [x] A la fin du tracé de la trajectoire, afficher la vitesse moyenne
 
 ## Communication
--  [ ] Faire les slides plateau projet(4)
+- [x] Faire les slides plateau projet(4)
 
 ## 🐞 Bugs connus
 

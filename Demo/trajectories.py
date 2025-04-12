@@ -29,17 +29,33 @@ def generate_mru_trajectory(start, initial_velocity, num_points, sigma=0.5):
 
 
 
-def generate_mua_trajectory(start, velocity, acceleration, num_points):
-    """Génère une trajectoire MUA en 2D."""
+
+def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), jerk_std=0.1):
+    """Génère une trajectoire MUA en 2D avec un jerk gaussien."""
     trajectory = [start]
+    velocities = [velocity]
+    accelerations = [acceleration]
+
     for _ in range(num_points - 1):
-        velocity = (velocity[0] + acceleration[0], velocity[1] + acceleration[1])
-        next_point = (trajectory[-1][0] + velocity[0], trajectory[-1][1] + velocity[1])
+        # Générer un jerk gaussien pour chaque composante (x, y)
+        jerk = np.random.normal(0, jerk_std, size=2)
+        
+        # Mettre à jour l'accélération
+        new_acceleration = (accelerations[-1][0] + jerk[0], accelerations[-1][1] + jerk[1])
+        accelerations.append(new_acceleration)
+        
+        # Mettre à jour la vitesse
+        new_velocity = (velocities[-1][0] + new_acceleration[0], velocities[-1][1] + new_acceleration[1])
+        velocities.append(new_velocity)
+        
+        # Mettre à jour la position
+        next_point = (trajectory[-1][0] + new_velocity[0], trajectory[-1][1] + new_velocity[1])
         trajectory.append(next_point)
+
     return np.array(trajectory)
 
 
-def generate_singer_trajectory(start, velocity, damping, num_points):
+def generate_singer_trajectory(start, velocity, num_points, damping=0.5,):
     """Génère une trajectoire Singer en 2D."""
     trajectory = [start]
     acceleration = (random.uniform(-1, 1), random.uniform(-1, 1))  # Accélération initiale aléatoire

@@ -55,16 +55,17 @@ class Boat:
       
 
 class InfoCard:
-    def __init__(self, x, y, bateau):
+    def __init__(self, x, y, bateau, couleur):
         self.x = x
         self.y = y
         self.bateau = bateau  # ← on garde le bateau, pas juste du texte
         self.width = 150
         self.height = 100
+        self.couleur = couleur
 
     def draw(self, screen):
         pygame.draw.rect(screen, WHITE, (self.x, self.y, self.width, self.height))
-        pygame.draw.rect(screen, BLACK, (self.x, self.y, self.width, self.height), 2)
+        pygame.draw.rect(screen, self.couleur, (self.x, self.y, self.width, self.height), 2)
         
         # Texte dynamique : on relit les infos à chaque fois
         lines = [
@@ -125,7 +126,12 @@ for i in range(NBRBOAT):
     start_point = (500/COEFFNORM, 400/COEFFNORM)
     velocity = (random.randint(-VELOCITY, VELOCITY), random.randint(-VELOCITY, VELOCITY))
     num_points = 500//COEFFNORM
-    traj = trajectories.generate_mru_trajectory(start_point, velocity, num_points)
+    if i%3 == 0:
+        traj = trajectories.generate_mru_trajectory(start_point, velocity, num_points)
+    elif i%3 == 1:
+        traj = trajectories.generate_mua_trajectory(start_point, velocity, num_points)
+    else:
+        traj = trajectories.generate_singer_trajectory(start_point, velocity, num_points)
     traj_norm = traj*COEFFNORM
     
     # Génération du bateau
@@ -138,7 +144,7 @@ for i in range(NBRBOAT):
     liste_vitesses_moyenne[i] = trajectories.calc_vitesse_moyenne(liste_vitesses[i])
     
     # Génération de la carte d'infos initiale
-    card = InfoCard(200*i, 100, bateau)
+    card = InfoCard(200*i, 100, bateau, rgb)
     info_cards.append(card)
     
     
