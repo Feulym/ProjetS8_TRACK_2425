@@ -8,14 +8,16 @@
 
 ## 🔌 Démo
 - [x] Tracer les trajectoires progressivement pour avoir la composante temporelle
-- [ ] Changer de carte background
+- [x] Changer de carte background
 - [x] Générer plusieurs types de mouvements (pas que MRU)
-- [ ] Jouer (beaucoups) sur les paramètres
+- [x] Jouer (beaucoups) sur les paramètres
 - [ ] Séparer le code en plus de fichiers pour une meilleure encapsulation
 - [x] Rendre les MRU et les MUA aléatoires
 - [x] Ajout d'un bouton "Rejouer"
 - [x] Mettre à jour la vitesse en continu
 - [x] A la fin du tracé de la trajectoire, afficher la vitesse moyenne
+- [ ] Introduire de faux bateaux pour le jeu de détection
+- [ ] Rajouter écran de victoire/défaite quand on lcique sur un bateau
 
 ## Communication
 - [x] Faire les slides plateau projet(4)
@@ -28,4 +30,4 @@
 
 
 
-Dernière mise à jour : 08/04/2025 par Raphaël  
+Dernière mise à jour : 14/04/2025 par Raphaël  

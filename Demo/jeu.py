@@ -1,11 +1,7 @@
 from enum import Enum
 from faker import Faker
-import numpy as np
 import cv2
 import random
-import math
-import requests
-import time
 from utils import *
 import trajectories
 import sys
