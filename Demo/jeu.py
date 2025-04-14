@@ -1,4 +1,3 @@
-import pygame
 from enum import Enum
 from faker import Faker
 import numpy as np
@@ -9,6 +8,17 @@ import requests
 import time
 from utils import *
 import trajectories
+import sys
+import os
+
+# On détourne temporairement stdout
+stdout_backup = sys.stdout
+sys.stdout = open(os.devnull, 'w')
+import pygame       # Import Pygame sans afficher son message
+# On réactive stdout
+sys.stdout.close()
+sys.stdout = stdout_backup
+
 
 
 # Variables Globales
@@ -35,6 +45,10 @@ WIDTH, HEIGHT = background.get_width(), background.get_height()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 font = pygame.font.Font(None, 24)   # Police
 
+# Génération de la trajectoire
+start_point = (1200/COEFFNORM, 400/COEFFNORM)
+num_points = 200//COEFFNORM
+
 
 class BateauType(Enum):
     CARGO = "Cargo"
@@ -45,12 +59,22 @@ class BateauType(Enum):
 # Vitesse de Base || Variance de Base de l'acceleration/jerk pour chaque type de bateau 
 # CARGO, CORVETTE, PECHE
 # Rapide|Non Maniable   TrèsRApide|Maniable     Lent|Maniable
-params = [[7, 0.01], [7, 1], [3, 0.5]]
+params = [[8, 0.05], [8, 1], [3, 0.5]]
 def randomize_params(param, variation_sigma_pourcentage=10.0):
+    """Fais varier entre + et - variation_sigma_pourcentage les valeurs de 
+        chaque paramètres en entrée de manière aléatoire
+
+    Args:
+        param (tuple): Les paramètres à modifier de façon aléatoire
+        variation_sigma_pourcentage (float, optional): . Defaults to 10.0.
+
+    Returns:
+        tuple: Les paramètres d'entrée modifiés 
+    """
     velo = param[0]
     var = param[1]
     velocity = (random.randint(-velo, velo), random.randint(-velo, velo))
-    variation = random.uniform(1 - variation_sigma_pourcentage/100, 1 + variation_sigma_pourcentage/100)
+    variation = random.uniform(var*(1 - variation_sigma_pourcentage/100), var*(1+ variation_sigma_pourcentage/100))
     variance = var + variation
     return velocity, variance
 
@@ -76,6 +100,7 @@ class InfoCard:
         self.bateau = bateau  # ← on garde le bateau, pas juste du texte
         self.width = 150
         self.height = 100
+        self.rect = pygame.Rect(x, y, self.width, self.height)
         self.couleur = couleur
 
     def draw(self, screen):
@@ -93,6 +118,13 @@ class InfoCard:
         for i, line in enumerate(lines):
             text_surface = font.render(line, True, BLACK)
             screen.blit(text_surface, (self.x + 5, self.y + 5 + i * 20))
+            
+    def is_clicked(self, event):
+        # Vérifier si le bouton a été cliqué
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Clic gauche
+            if self.rect.collidepoint(event.pos):  # Si on clique sur le bouton
+                return True
+        return False
 
             
                      
@@ -137,12 +169,9 @@ button = Button(WIDTH - 170, HEIGHT - 70, 150, 50, "Rejouer")
 # Générer les bateaux et leurs trajectoires à afficher
 for i in range(NBRBOAT):
     
-    # Génération de la trajectoire
-    start_point = (1000/COEFFNORM, 400/COEFFNORM)
-    num_points = 200//COEFFNORM
-    
     if i%3 == 0:
         param = randomize_params(params[i])
+        print(param)
         traj = trajectories.generate_mru_trajectory(start_point, param[0], num_points, sigma=param[1])
         traj_norm = traj*COEFFNORM
         # Génération du bateau
@@ -151,6 +180,7 @@ for i in range(NBRBOAT):
         liste_bateaux.append(bateau)
     elif i%3 == 1:
         param = randomize_params(params[i])
+        print(param)
         traj = trajectories.generate_mua_trajectory(start_point, param[0], num_points, jerk_std=param[1])
         traj_norm = traj*COEFFNORM
          # Génération du bateau
@@ -159,6 +189,7 @@ for i in range(NBRBOAT):
         liste_bateaux.append(bateau)
     else:
         param = randomize_params(params[i])
+        print(param)
         traj = trajectories.generate_singer_trajectory(start_point, param[0], num_points)
         traj_norm = traj*COEFFNORM
          # Génération du bateau
@@ -233,6 +264,10 @@ while running:
         
         if button.is_clicked(event):
             trajectory_index = 1  # Réinitialiser l'animation pour recommencer
+            
+        for card in info_cards:
+            if card.is_clicked(event):
+                print("Click détecté sur la carte " + card.bateau.name)
             
         if event.type == pygame.QUIT:
             running = False

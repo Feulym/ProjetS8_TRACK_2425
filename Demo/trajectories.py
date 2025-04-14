@@ -37,9 +37,12 @@ def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), je
     accelerations = [acceleration]
     jerk_std = jerk_std/20
 
-    for _ in range(num_points - 1):
+    for i in range(num_points - 1):
         # Générer un jerk gaussien pour chaque composante (x, y)
         jerk = np.random.normal(0, jerk_std, size=2)
+        
+        if i % 50 == 0:
+            new_acceleration = (0, 0)
         
         # Mettre à jour l'accélération
         new_acceleration = (accelerations[-1][0] + jerk[0], accelerations[-1][1] + jerk[1])
