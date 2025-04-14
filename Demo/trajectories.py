@@ -81,6 +81,59 @@ def generate_singer_trajectory(start, velocity, num_points, damping=0.5, noise_s
 
 
 
+def generate_random_trajectory(start, velocity, num_points, sigma=0.5):
+    """Génère une trajectoire dont le modèle est choisi de façon aléatoire
+
+    Args:
+        start (_type_): _description_
+        velocity (_type_): _description_
+        num_points (_type_): _description_
+        sigma (float, optional): _description_. Defaults to 0.5.
+    """
+    x = random.randint(1, 3)
+    
+    if x==1:
+        traj = generate_mru_trajectory(start, velocity, num_points, sigma)
+    
+    elif x==2:
+        traj = generate_mua_trajectory(start, velocity, num_points, jerk_std=sigma)
+        
+    else:
+        traj = generate_singer_trajectory(start, velocity, num_points, noise_std=sigma)
+        
+    return traj
+
+
+def allinone(start, velocity, num_points, sigma, nbr_sous_traj=4):
+    """Génère de manière récursive une trajectoire de num_points composée de nbr_sous_traj sous-trajectoires qui suivent 
+        chacun un des 3 modèles définit de façon aléatoire
+
+    Args:
+        start (_type_): _description_
+        velocity (_type_): _description_
+        num_points (_type_): _description_
+        sigma (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    
+    # Choix aléatoiresdes indices ou on changera de type de trajectoire
+    indices = random.sample(range(2, num_points), nbr_sous_traj)
+    indices.sort()
+    
+    nbr_points = indices[1] - indices[0]
+    traj = generate_random_trajectory(start, velocity, nbr_points, sigma)
+    vitesses = calc_vitesse(traj)
+    new_start = traj[-1]
+    new_velocity = vitesses[-1]
+    
+    new_traj = allinone(new_start, new_velocity, num_points-nbr_points, nbr_sous_traj-1)
+    
+    return np.concatenate(traj, new_traj)
+
+
+
 
 
 # Calcule la vitesse à chaque instant en noeuds à partir d'une trajectoire
@@ -121,8 +174,9 @@ if __name__ == "__main__":
     num_points = 50
 
     mru_test = generate_mru_trajectory(start_point, velocity, num_points)
-    mua_test = generate_mua_trajectory(start_point, velocity, acceleration, num_points)
-    singer_test = generate_singer_trajectory(start_point, velocity, damping, num_points)
+    mua_test = generate_mua_trajectory(start_point, velocity, num_points)
+    singer_test = generate_singer_trajectory(start_point, velocity, num_points)
+    allinone_test = allinone(start_point, velocity, num_points, 0.5, 4)
 
-    mru_test.shape, mua_test.shape, singer_test.shape
+    mru_test.shape, mua_test.shape, singer_test.shape, allinone_test.shape
 
