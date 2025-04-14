@@ -30,11 +30,12 @@ def generate_mru_trajectory(start, initial_velocity, num_points, sigma=0.5):
 
 
 
-def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), jerk_std=0.1):
+def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), jerk_std=0.05):
     """Génère une trajectoire MUA en 2D avec un jerk gaussien."""
     trajectory = [start]
     velocities = [velocity]
     accelerations = [acceleration]
+    jerk_std = jerk_std/20
 
     for _ in range(num_points - 1):
         # Générer un jerk gaussien pour chaque composante (x, y)
@@ -55,16 +56,26 @@ def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), je
     return np.array(trajectory)
 
 
-def generate_singer_trajectory(start, velocity, num_points, damping=0.5,):
-    """Génère une trajectoire Singer en 2D."""
+
+def generate_singer_trajectory(start, velocity, num_points, damping=0.5, noise_std=0.5):
+    """Génère une trajectoire Singer en 2D avec accélérations aléatoires amorties."""
     trajectory = [start]
-    acceleration = (random.uniform(-1, 1), random.uniform(-1, 1))  # Accélération initiale aléatoire
+    acceleration = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])  # Accélération initiale
+
     for _ in range(num_points - 1):
-        acceleration = (acceleration[0] * damping, acceleration[1] * damping)
-        velocity = (velocity[0] + acceleration[0], velocity[1] + acceleration[1])
-        next_point = (trajectory[-1][0] + velocity[0], trajectory[-1][1] + velocity[1])
+        # Mise à jour de l'accélération avec amortissement et bruit blanc
+        jerk = np.random.normal(0, noise_std, size=2)
+        acceleration = damping * acceleration + jerk
+
+        # Mise à jour de la vitesse
+        velocity = velocity + acceleration
+
+        # Mise à jour de la position
+        next_point = trajectory[-1] + velocity
         trajectory.append(next_point)
+
     return np.array(trajectory)
+
 
 
 
@@ -77,7 +88,7 @@ def calc_vitesse(trajectory, batch_size=1):
     for ii in range(1, len(trajectory)):
         x1, y1 = trajectory[ii - 1]
         x2, y2 = trajectory[ii]
-        distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)   # Calcul de la distance entre les 2 points successifs
+        distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)   # Calcul de la distance entre les 2 points successifs (en pixels)
         vitesse = distance / TE                                 # Calcul de la vitesse en m/s
         vitesse_noeuds = vitesse * 3600 / 1852                  # Conversion en noeuds
         liste_vitesses[ii] = round(vitesse_noeuds)

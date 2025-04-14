@@ -1,0 +1,8 @@
+cargo: 11 -> 24 noeuds
+corvette 20 -> 35 noeuds
+
+            MRU     MUA     Singer
+            v
+cargo 
+corvette
+peche

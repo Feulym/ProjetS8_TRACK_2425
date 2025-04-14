@@ -42,6 +42,11 @@ def is_trajectory_in_white_area(trajectory: np.ndarray, image: np.ndarray) -> bo
     return True
 
 
+
+
+
+
+
 # # Exemple d'utilisation avec une trajectoire fictive
 # sample_trajectory = np.array([[500, 500], [600, 600], [700, 700]])
 # result = is_trajectory_in_white_area(sample_trajectory, image)

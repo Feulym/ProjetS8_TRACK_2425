@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Contrôle du jeu Pygame</title>
+</head>
+<body>
+  <h1>Paramètres du jeu</h1>
+  <label>Vitesse : <input type="range" id="speed" min="1" max="10" value="5"></label><br>
+  <label>Difficulté : 
+    <select id="difficulty">
+      <option value="easy">Facile</option>
+      <option value="medium" selected>Moyenne</option>
+      <option value="hard">Difficile</option>
+    </select>
+  </label><br><br>
+
+  <button onclick="sendParams()">Envoyer</button>
+
+  <br>
+
+  <button onclick="launchGame()">Lancer le jeu</button>
+
+
+
+  <script>
+    function sendParams() {
+      const speed = document.getElementById("speed").value;
+      const difficulty = document.getElementById("difficulty").value;
+
+      fetch('/set_params', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({speed: speed, difficulty: difficulty})
+      })
+      .then(response => response.json())
+      .then(data => console.log("Données envoyées :", data));
+    }
+
+    function launchGame() {
+        fetch('/start_game', { method: 'POST' })
+          .then(response => response.json())
+          .then(data => console.log(data.message));
+      }
+  </script>
+</body>
+</html>

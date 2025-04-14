@@ -10,9 +10,9 @@
 - [x] Tracer les trajectoires progressivement pour avoir la composante temporelle
 - [ ] Changer de carte background
 - [x] Générer plusieurs types de mouvements (pas que MRU)
-- [ ] Jouer (beacoups) sur les paramètres
+- [ ] Jouer (beaucoups) sur les paramètres
 - [ ] Séparer le code en plus de fichiers pour une meilleure encapsulation
-- [ ] Rendre les MRU et les MUA aléatoires
+- [x] Rendre les MRU et les MUA aléatoires
 - [x] Ajout d'un bouton "Rejouer"
 - [x] Mettre à jour la vitesse en continu
 - [x] A la fin du tracé de la trajectoire, afficher la vitesse moyenne

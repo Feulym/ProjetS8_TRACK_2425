@@ -5,13 +5,14 @@ import numpy as np
 import cv2
 import random
 import math
-
+import requests
+import time
 from utils import *
 import trajectories
 
 
 # Variables Globales
-BACKGROUND_IMAGE = "background_english_channel.png"
+BACKGROUND_IMAGE = "background_taiwan.png"
 NBRBOAT = 3
 COEFFNORM = 3
 VELOCITY = 5
@@ -29,6 +30,7 @@ image = cv2.imread(BACKGROUND_IMAGE, cv2.IMREAD_GRAYSCALE)
 WIDTH, HEIGHT = background.get_width(), background.get_height()
 
 
+
 # Création de la fenêtre avec la taille de l'image et la police
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 font = pygame.font.Font(None, 24)   # Police
@@ -36,8 +38,21 @@ font = pygame.font.Font(None, 24)   # Police
 
 class BateauType(Enum):
     CARGO = "Cargo"
-    VOILIER = "Voilier"
+    CORVETTE = "Corvette"
     PECHE = "Bateau de pêche"
+    
+
+# Vitesse de Base || Variance de Base de l'acceleration/jerk pour chaque type de bateau 
+# CARGO, CORVETTE, PECHE
+# Rapide|Non Maniable   TrèsRApide|Maniable     Lent|Maniable
+params = [[7, 0.01], [7, 1], [3, 0.5]]
+def randomize_params(param, variation_sigma_pourcentage=10.0):
+    velo = param[0]
+    var = param[1]
+    velocity = (random.randint(-velo, velo), random.randint(-velo, velo))
+    variation = random.uniform(1 - variation_sigma_pourcentage/100, 1 + variation_sigma_pourcentage/100)
+    variance = var + variation
+    return velocity, variance
 
 
 # Classe pour les infos d'un bateau
@@ -123,21 +138,36 @@ button = Button(WIDTH - 170, HEIGHT - 70, 150, 50, "Rejouer")
 for i in range(NBRBOAT):
     
     # Génération de la trajectoire
-    start_point = (500/COEFFNORM, 400/COEFFNORM)
-    velocity = (random.randint(-VELOCITY, VELOCITY), random.randint(-VELOCITY, VELOCITY))
-    num_points = 500//COEFFNORM
-    if i%3 == 0:
-        traj = trajectories.generate_mru_trajectory(start_point, velocity, num_points)
-    elif i%3 == 1:
-        traj = trajectories.generate_mua_trajectory(start_point, velocity, num_points)
-    else:
-        traj = trajectories.generate_singer_trajectory(start_point, velocity, num_points)
-    traj_norm = traj*COEFFNORM
+    start_point = (1000/COEFFNORM, 400/COEFFNORM)
+    num_points = 200//COEFFNORM
     
-    # Génération du bateau
-    nom_couleur, rgb = couleurs[i]
-    bateau = Boat(30, BateauType.CARGO, traj_norm, rgb)
-    liste_bateaux.append(bateau)
+    if i%3 == 0:
+        param = randomize_params(params[i])
+        traj = trajectories.generate_mru_trajectory(start_point, param[0], num_points, sigma=param[1])
+        traj_norm = traj*COEFFNORM
+        # Génération du bateau
+        nom_couleur, rgb = couleurs[i]
+        bateau = Boat(30, BateauType.CARGO, traj_norm, rgb)
+        liste_bateaux.append(bateau)
+    elif i%3 == 1:
+        param = randomize_params(params[i])
+        traj = trajectories.generate_mua_trajectory(start_point, param[0], num_points, jerk_std=param[1])
+        traj_norm = traj*COEFFNORM
+         # Génération du bateau
+        nom_couleur, rgb = couleurs[i]
+        bateau = Boat(30, BateauType.CORVETTE, traj_norm, rgb)
+        liste_bateaux.append(bateau)
+    else:
+        param = randomize_params(params[i])
+        traj = trajectories.generate_singer_trajectory(start_point, param[0], num_points)
+        traj_norm = traj*COEFFNORM
+         # Génération du bateau
+        nom_couleur, rgb = couleurs[i]
+        bateau = Boat(30, BateauType.PECHE, traj_norm, rgb)
+        liste_bateaux.append(bateau)
+    
+    
+   
     
     # Calcul des vitesses
     liste_vitesses[i] = trajectories.calc_vitesse(traj)
@@ -173,8 +203,6 @@ while running:
         else:
             bateau.vitesse = liste_vitesses[ii][-1]  # On garde la dernière valeur connue
             bateau.vitesse_moyenne = liste_vitesses_moyenne[ii][-1]  # On garde la dernière valeur connue
-
-        print(bateau.vitesse)
         
         # Si la trajectoire a plus d'un point
         if len(trajectory) > 1:
@@ -194,7 +222,7 @@ while running:
 
     pygame.display.flip()
     
-    # Augmenter l'index pour dessiner la trajectoire progressivement
+    # Augmenter l'index pour dessiner les trajectoires progressivement
     if trajectory_index < len(trajectory) - 1:
         trajectory_index += 1
         
