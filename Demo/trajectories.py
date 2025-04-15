@@ -129,7 +129,7 @@ def allinone(start, velocity, num_points, sigma, nbr_sous_traj=4):
     nbr_points = indices[1] - indices[0]
     traj = generate_random_trajectory(start, velocity, nbr_points, sigma)
     
-    new_velocity = calc_vitesse(traj, get_2dvit=True)
+    new_velocity = calc_vitesse(traj, True, get_2dvit=True)
     new_start = traj[-1]
     
     # Génération récursive de la prochaine trajectoire
@@ -146,7 +146,7 @@ def allinone(start, velocity, num_points, sigma, nbr_sous_traj=4):
 
 
 # Calcule la vitesse à chaque instant en noeuds à partir d'une trajectoire
-def calc_vitesse(trajectory, batch_size=1, get_2dvit=False):
+def calc_vitesse(trajectory, vrai_bateau, batch_size=1, get_2dvit=False):
     
     liste_vitesses = [0 for _ in range(len(trajectory))]
     x1, y1, x2, y2 = 0, 0, 0, 0
@@ -157,7 +157,12 @@ def calc_vitesse(trajectory, batch_size=1, get_2dvit=False):
         distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)   # Calcul de la distance entre les 2 points successifs (en pixels)
         vitesse = distance / TE                                 # Calcul de la vitesse en m/s
         vitesse_noeuds = vitesse * 3600 / 1852                  # Conversion en noeuds
-        liste_vitesses[ii] = round(vitesse_noeuds)
+        
+        if not vrai_bateau:
+            brouillage = random.uniform(0.9, 1.1)  # nombre aléatoire entre 0.9 et 1.1
+            liste_vitesses[ii] = round(vitesse_noeuds * brouillage)
+        else:
+            liste_vitesses[ii] = round(vitesse_noeuds)
         
     if get_2dvit:
         return (x2 - x1, y2-y1)

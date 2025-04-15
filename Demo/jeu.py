@@ -221,7 +221,7 @@ def create_boat(i, start_point, num_points, parametres, typeTraj, boatType, real
     liste_bateaux.append(bateau)
     
     # Calcul des vitesses
-    liste_vitesses[i] = trajectories.calc_vitesse(traj)
+    liste_vitesses[i] = trajectories.calc_vitesse(traj, bateau.real)
     liste_vitesses_moyenne[i] = trajectories.calc_vitesse_moyenne(liste_vitesses[i])
     
     # Génération de la carte d'infos initiale
