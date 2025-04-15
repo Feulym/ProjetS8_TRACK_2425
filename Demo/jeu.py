@@ -21,6 +21,7 @@ sys.stdout = stdout_backup
 # Variables Globales
 BACKGROUND_IMAGE = "background_taiwan.png"
 NBRBOAT = 4
+NBRWRONGBOAT = 1
 COEFFNORM = 3
 VELOCITY = 5
 DELAY = 50  # Délai entre 2 images
@@ -51,6 +52,8 @@ class BateauType(Enum):
     CORVETTE = "Corvette"
     PECHE = "Bateau de pêche"
     
+BoatTypesEnum = [BateauType.CARGO, BateauType.CORVETTE, BateauType.PECHE]
+MouvementsTypeEnum = ["MRU", "MUA", "Singer", "Combinaison"]
 
 # Vitesse de Base || Variance de Base de l'acceleration/jerk pour chaque type de bateau 
 # CARGO, CORVETTE, PECHE
@@ -153,6 +156,33 @@ class Button:
             
 
 
+def random_boat(real=True):
+    """Génère les paramètres et caractéristiques d'un bateau de façon procédurale
+
+    Args:
+        real (bool, optional): Permet de choisir si les paramètres et caractéristiques du bateau sont cohérentes ou non. Defaults to True.
+    """
+    n = random.randint(0, 3)
+    n2 = n
+    while n2 == n:
+        n2 = random.randint(0, 2)
+    
+    if n == 3:
+        boatType = BoatTypesEnum[n2]
+        mvmnt_type = MouvementsTypeEnum[n2]
+    else:
+        boatType = BoatTypesEnum[n]
+        mvmnt_type = MouvementsTypeEnum[n]
+            
+    if (not real) or (n == 3):
+        parametres = randomize_params(params[n2])
+    else:
+        parametres = randomize_params(params[n])
+        
+    return boatType, parametres, mvmnt_type
+        
+             
+
 
 liste_bateaux = []
 liste_vitesses = [[] for _ in range(NBRBOAT)]
@@ -162,23 +192,21 @@ info_cards = []
 
 def create_boat(i, start_point, num_points, parametres, typeTraj, boatType):
     
-    param = randomize_params(parametres)
-    
     if typeTraj == "MRU":
-        traj = trajectories.generate_mru_trajectory(start_point, param[0], num_points, sigma=param[1])
+        traj = trajectories.generate_mru_trajectory(start_point, parametres[0], num_points, sigma=parametres[1])
     elif typeTraj == "MUA": 
-        traj = trajectories.generate_mua_trajectory(start_point, param[0], num_points, jerk_std=param[1])
+        traj = trajectories.generate_mua_trajectory(start_point, parametres[0], num_points, jerk_std=parametres[1])
     elif typeTraj == "Singer":
-        traj = trajectories.generate_singer_trajectory(start_point, param[0], num_points, noise_std=param[1])
+        traj = trajectories.generate_singer_trajectory(start_point, parametres[0], num_points, noise_std=parametres[1])
     elif typeTraj == "Combinaison":
-        traj = trajectories.allinone(start_point, param[0], num_points, param[1])
+        traj = trajectories.allinone(start_point, parametres[0], num_points, parametres[1])
     
     # Normalisation de la trajectoire à la taille de la carte  
     traj_norm = traj*COEFFNORM
     
     # Génération du bateau
     _, rgb = couleurs[i]
-    bateau = Boat(30, BateauType.CARGO, traj_norm, rgb)
+    bateau = Boat(30, boatType, traj_norm, rgb)
     liste_bateaux.append(bateau)
     
     # Calcul des vitesses
@@ -190,18 +218,25 @@ def create_boat(i, start_point, num_points, parametres, typeTraj, boatType):
     info_cards.append(card)
 
 
+# Déterminer l'indice du/des faux bateaux
+indices_wrong_boats = random.sample(range(NBRBOAT), NBRWRONGBOAT) 
+
+
 # Générer les bateaux et leurs trajectoires à afficher
 for i in range(NBRBOAT):
     
-    match i%NBRBOAT:
-        case 0:
-            create_boat(i, start_point, num_points, params[i], "MRU", BateauType.CARGO)
-        case 1:
-            create_boat(i, start_point, num_points, params[i], "MUA", BateauType.CORVETTE)
-        case 2:
-            create_boat(i, start_point, num_points, params[i], "Singer", BateauType.PECHE)
-        case 3:
-            create_boat(i, start_point, num_points, params[i], "Combinaison", BateauType.CORVETTE)
+    boatType, parametres, mvmt_type = random_boat(i not in indices_wrong_boats)
+    create_boat(i, start_point, num_points, parametres, mvmt_type, boatType)
+    
+    # match i%NBRBOAT:
+    #     case 0:
+    #         create_boat(i, start_point, num_points, params[i], "MRU", BateauType.CARGO)
+    #     case 1:
+    #         create_boat(i, start_point, num_points, params[i], "MUA", BateauType.CORVETTE)
+    #     case 2:
+    #         create_boat(i, start_point, num_points, params[i], "Singer", BateauType.PECHE)
+    #     case 3:
+    #         create_boat(i, start_point, num_points, params[i], "Combinaison", BateauType.CORVETTE)
     
    
     
@@ -266,8 +301,34 @@ while running:
             trajectory_index = 1  # Réinitialiser l'animation pour recommencer
             
         for card in info_cards:
+            
             if card.is_clicked(event):
                 print("Click détecté sur la carte " + card.bateau.name)
+                if 9 >= 10:
+                    # Afficher écran de victoire
+                    print("victoire")
+                    screen.fill(WHITE)
+                    text = font.render("VICTOIRE !", True, couleurs[1][1])
+                else:
+                    # Afficher écran de défaite
+                    screen.fill(WHITE)
+                    text = font.render("DEFAITE", True, couleurs[0][1])
+                    
+                screen.blit(text, (200, 250))
+                pygame.display.flip()
+                
+                # Attendre clic ou ESC
+                waiting = True
+                while waiting:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit()
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE:
+                                waiting = False
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            waiting = False
             
         if event.type == pygame.QUIT:
             running = False
