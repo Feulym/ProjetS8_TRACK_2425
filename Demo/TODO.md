@@ -20,8 +20,10 @@
 - [X] Introduire de faux bateaux pour le jeu de détection
 - [X] Rajouter écran de victoire/défaite quand on clique sur un bateau
 - [x] Combiner plusieurs trajectoires
-- [ ] Faire varier la difficulté en brouillant plus la vitesse
+- [x] Faire varier la difficulté en brouillant plus la vitesse
 - [ ] Rendre les paramètres type difficulté changeable sur l'interface web
+- [ ] Rendre les trajectoires combinaison brouillable en vitesse
+- [x] Afficher le type de mouvement dans le print final des bateaux
 
 ## Communication
 - [x] Faire les slides plateau projet(4)

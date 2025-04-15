@@ -81,7 +81,7 @@ def randomize_params(param, variation_sigma_pourcentage=10.0):
 
 # Classe pour les infos d'un bateau
 class Boat:
-    def __init__(self, vitesse, boat_type, trajectoire, color, real=True):
+    def __init__(self, vitesse, boat_type, trajectoire, color, real=True, mvmt_type=""):
         self.name = fake.first_name()
         self.vitesse = vitesse
         self.type = boat_type
@@ -89,14 +89,14 @@ class Boat:
         self.color = color
         self.vitesse_moyenne = 0
         self.real = real
-        self.mvmt_type = ""
+        self.mvmt_type = mvmt_type
         
     def toString(self):
         return self.name + "\nVitesse: " + str(self.vitesse) + "\nType: " + self.type.value
     
     def getInfos(self):
         separateur = "--------------\n"
-        string = self.name + "\nType: " + self.type.value + "\n" + str(self.real) + " Bateau"
+        string = self.name + "\nType: " + self.type.value + "\nMvmt_Type: " + str(self.mvmt_type) + "\n" + str(self.real) + " Bateau"
         print(separateur + string)
       
 
@@ -218,7 +218,7 @@ def create_boat(i, start_point, num_points, parametres, typeTraj, boatType, real
     
     # Génération du bateau
     _, rgb = couleurs[i]
-    bateau = Boat(30, boatType, traj_norm, rgb, real)
+    bateau = Boat(30, boatType, traj_norm, rgb, real, mvmt_type=typeTraj)
     liste_bateaux.append(bateau)
     
     # Calcul des vitesses
@@ -333,8 +333,11 @@ while running:
                 screen.blit(text, (200, 250))
                 pygame.display.flip()
                 
+                # affichage des infos complètes des bateaux
+                print("----INFO BATEAUX-----\n")
                 for bateau in liste_bateaux:
                     bateau.getInfos()
+                print("-------------------")
                 
                 # Attendre clic ou ESC
                 waiting = True
