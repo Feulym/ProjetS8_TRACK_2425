@@ -118,26 +118,35 @@ def allinone(start, velocity, num_points, sigma, nbr_sous_traj=4):
         _type_: _description_
     """
     
+    if nbr_sous_traj == 0:
+        return np.array([])
+    
     # Choix aléatoiresdes indices ou on changera de type de trajectoire
     indices = random.sample(range(2, num_points), nbr_sous_traj)
     indices.sort()
-    
+    if(len(indices) == 1):
+        indices.append(num_points - 1)
     nbr_points = indices[1] - indices[0]
     traj = generate_random_trajectory(start, velocity, nbr_points, sigma)
-    vitesses = calc_vitesse(traj)
+    
+    new_velocity = calc_vitesse(traj, get_2dvit=True)
     new_start = traj[-1]
-    new_velocity = vitesses[-1]
     
-    new_traj = allinone(new_start, new_velocity, num_points-nbr_points, nbr_sous_traj-1)
+    # Génération récursive de la prochaine trajectoire
+    new_traj = allinone(new_start, new_velocity, num_points-nbr_points, sigma, nbr_sous_traj - 1)
     
-    return np.concatenate(traj, new_traj)
+    # Terminaison
+    if(new_traj.size == 0):
+        return traj
+    else:
+        return np.vstack((traj, new_traj))
 
 
 
 
 
 # Calcule la vitesse à chaque instant en noeuds à partir d'une trajectoire
-def calc_vitesse(trajectory, batch_size=1):
+def calc_vitesse(trajectory, batch_size=1, get_2dvit=False):
     
     liste_vitesses = [0 for _ in range(len(trajectory))]
     
@@ -148,6 +157,9 @@ def calc_vitesse(trajectory, batch_size=1):
         vitesse = distance / TE                                 # Calcul de la vitesse en m/s
         vitesse_noeuds = vitesse * 3600 / 1852                  # Conversion en noeuds
         liste_vitesses[ii] = round(vitesse_noeuds)
+        
+    if get_2dvit:
+        return (x2 - x1, y2-y1)
         
     return liste_vitesses
 
@@ -178,5 +190,5 @@ if __name__ == "__main__":
     singer_test = generate_singer_trajectory(start_point, velocity, num_points)
     allinone_test = allinone(start_point, velocity, num_points, 0.5, 4)
 
-    mru_test.shape, mua_test.shape, singer_test.shape, allinone_test.shape
+    print(mru_test.shape, mua_test.shape, singer_test.shape, allinone_test.shape)
 

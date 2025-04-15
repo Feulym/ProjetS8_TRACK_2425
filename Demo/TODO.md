@@ -18,9 +18,13 @@
 - [x] A la fin du tracé de la trajectoire, afficher la vitesse moyenne
 - [ ] Introduire de faux bateaux pour le jeu de détection
 - [ ] Rajouter écran de victoire/défaite quand on lcique sur un bateau
+- [ ] Combiner plusieurs trajectoires
 
 ## Communication
 - [x] Faire les slides plateau projet(4)
+
+## DataBase
+- [ ] Générer des Singers plus différenets sur la branche lstm_dev
 
 ## 🐞 Bugs connus
 

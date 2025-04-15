@@ -19,7 +19,7 @@ sys.stdout = stdout_backup
 
 # Variables Globales
 BACKGROUND_IMAGE = "background_taiwan.png"
-NBRBOAT = 3
+NBRBOAT = 4
 COEFFNORM = 3
 VELOCITY = 5
 DELAY = 50  # Délai entre 2 images
@@ -165,34 +165,38 @@ button = Button(WIDTH - 170, HEIGHT - 70, 150, 50, "Rejouer")
 # Générer les bateaux et leurs trajectoires à afficher
 for i in range(NBRBOAT):
     
-    if i%3 == 0:
+    if i%4 == 0:
         param = randomize_params(params[i])
-        print(param)
         traj = trajectories.generate_mru_trajectory(start_point, param[0], num_points, sigma=param[1])
         traj_norm = traj*COEFFNORM
         # Génération du bateau
         nom_couleur, rgb = couleurs[i]
         bateau = Boat(30, BateauType.CARGO, traj_norm, rgb)
         liste_bateaux.append(bateau)
-    elif i%3 == 1:
+    elif i%4 == 1:
         param = randomize_params(params[i])
-        print(param)
         traj = trajectories.generate_mua_trajectory(start_point, param[0], num_points, jerk_std=param[1])
         traj_norm = traj*COEFFNORM
          # Génération du bateau
         nom_couleur, rgb = couleurs[i]
         bateau = Boat(30, BateauType.CORVETTE, traj_norm, rgb)
         liste_bateaux.append(bateau)
-    else:
+    elif i%4 == 2:
         param = randomize_params(params[i])
-        print(param)
-        traj = trajectories.generate_singer_trajectory(start_point, param[0], num_points)
+        traj = trajectories.generate_singer_trajectory(start_point, param[0], num_points, noise_std=param[1])
         traj_norm = traj*COEFFNORM
          # Génération du bateau
         nom_couleur, rgb = couleurs[i]
         bateau = Boat(30, BateauType.PECHE, traj_norm, rgb)
         liste_bateaux.append(bateau)
-    
+    elif i%4 == 3:
+        param = randomize_params(params[i-1])
+        traj = trajectories.allinone(start_point, param[0], 2*num_points, param[1])
+        traj_norm = traj*COEFFNORM
+         # Génération du bateau
+        nom_couleur, rgb = couleurs[i]
+        bateau = Boat(30, BateauType.PECHE, traj_norm, rgb)
+        liste_bateaux.append(bateau)
     
    
     
