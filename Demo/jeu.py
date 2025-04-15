@@ -80,16 +80,23 @@ def randomize_params(param, variation_sigma_pourcentage=10.0):
 
 # Classe pour les infos d'un bateau
 class Boat:
-    def __init__(self, vitesse, boat_type, trajectoire, color):
+    def __init__(self, vitesse, boat_type, trajectoire, color, real=True):
         self.name = fake.first_name()
         self.vitesse = vitesse
         self.type = boat_type
         self.trajectoire = trajectoire
         self.color = color
         self.vitesse_moyenne = 0
+        self.real = real
+        self.mvmt_type = ""
         
     def toString(self):
         return self.name + "\nVitesse: " + str(self.vitesse) + "\nType: " + self.type.value
+    
+    def getInfos(self):
+        separateur = "--------------\n"
+        string = self.name + "\nType: " + self.type.value + "\n" + str(self.real) + " Bateau"
+        print(separateur + string)
       
 
 class InfoCard:
@@ -170,18 +177,22 @@ def random_boat(real=True):
     if n == 3:
         boatType = BoatTypesEnum[n2]
         mvmnt_type = MouvementsTypeEnum[n2]
+        parametresF = params[n2]
     else:
         boatType = BoatTypesEnum[n]
         mvmnt_type = MouvementsTypeEnum[n]
+        parametresF = params[n]
+        
             
-    if (not real) or (n == 3):
-        parametres = randomize_params(params[n2])
+    if not real:
+        parametres = randomize_params(parametresF, 20.0)
     else:
-        parametres = randomize_params(params[n])
+        parametres = randomize_params(parametresF)
+        
         
     return boatType, parametres, mvmnt_type
         
-             
+
 
 
 liste_bateaux = []
@@ -190,7 +201,7 @@ liste_vitesses_moyenne = [[] for _ in range(NBRBOAT)]
 info_cards = []
 
 
-def create_boat(i, start_point, num_points, parametres, typeTraj, boatType):
+def create_boat(i, start_point, num_points, parametres, typeTraj, boatType, real=True):
     
     if typeTraj == "MRU":
         traj = trajectories.generate_mru_trajectory(start_point, parametres[0], num_points, sigma=parametres[1])
@@ -206,7 +217,7 @@ def create_boat(i, start_point, num_points, parametres, typeTraj, boatType):
     
     # Génération du bateau
     _, rgb = couleurs[i]
-    bateau = Boat(30, boatType, traj_norm, rgb)
+    bateau = Boat(30, boatType, traj_norm, rgb, real)
     liste_bateaux.append(bateau)
     
     # Calcul des vitesses
@@ -218,6 +229,7 @@ def create_boat(i, start_point, num_points, parametres, typeTraj, boatType):
     info_cards.append(card)
 
 
+
 # Déterminer l'indice du/des faux bateaux
 indices_wrong_boats = random.sample(range(NBRBOAT), NBRWRONGBOAT) 
 
@@ -226,7 +238,7 @@ indices_wrong_boats = random.sample(range(NBRBOAT), NBRWRONGBOAT)
 for i in range(NBRBOAT):
     
     boatType, parametres, mvmt_type = random_boat(i not in indices_wrong_boats)
-    create_boat(i, start_point, num_points, parametres, mvmt_type, boatType)
+    create_boat(i, start_point, num_points, parametres, mvmt_type, boatType, i not in indices_wrong_boats)
     
     # match i%NBRBOAT:
     #     case 0:
@@ -239,7 +251,10 @@ for i in range(NBRBOAT):
     #         create_boat(i, start_point, num_points, params[i], "Combinaison", BateauType.CORVETTE)
     
    
-    
+def affichage_boats():
+    for ii in range(liste_bateaux):
+        bateau = liste_bateaux[ii]
+        
     
     
     
@@ -304,7 +319,7 @@ while running:
             
             if card.is_clicked(event):
                 print("Click détecté sur la carte " + card.bateau.name)
-                if 9 >= 10:
+                if not card.bateau.real:
                     # Afficher écran de victoire
                     print("victoire")
                     screen.fill(WHITE)
@@ -316,6 +331,9 @@ while running:
                     
                 screen.blit(text, (200, 250))
                 pygame.display.flip()
+                
+                for bateau in liste_bateaux:
+                    bateau.getInfos()
                 
                 # Attendre clic ou ESC
                 waiting = True
