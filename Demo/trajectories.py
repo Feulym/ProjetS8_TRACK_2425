@@ -3,8 +3,11 @@ import numpy as np
 import math
 
 
-ECHELLE = 1 # 1 pixel sur l'image correspond à combien de km
 TE = 1  # Période d'échantillonage (temps entre 2 échantillons) (nécessaire pour claucler la vitesse)
+DIFFICULTY = 1
+
+
+difficulty = [40.0, 20.0, 10.0]
 
 
 def generate_mru_trajectory(start, initial_velocity, num_points, sigma=0.5):
@@ -159,7 +162,7 @@ def calc_vitesse(trajectory, vrai_bateau, batch_size=1, get_2dvit=False):
         vitesse_noeuds = vitesse * 3600 / 1852                  # Conversion en noeuds
         
         if not vrai_bateau:
-            brouillage = random.uniform(0.9, 1.1)  # nombre aléatoire entre 0.9 et 1.1
+            brouillage = random.uniform(1.0 - difficulty[DIFFICULTY-1]/100, 1.0 + difficulty[DIFFICULTY-1]/100)  # nombre aléatoire entre 0.9 et 1.1
             liste_vitesses[ii] = round(vitesse_noeuds * brouillage)
         else:
             liste_vitesses[ii] = round(vitesse_noeuds)

@@ -4,6 +4,7 @@
 ## 🖥️ Site WEB
 - [ ] Faire la page projet
 - [ ] Changer le textes sur la page d'accueil
+- [ ] Héberger le site
 
 
 ## 🔌 Démo
@@ -16,9 +17,11 @@
 - [x] Ajout d'un bouton "Rejouer"
 - [x] Mettre à jour la vitesse en continu
 - [x] A la fin du tracé de la trajectoire, afficher la vitesse moyenne
-- [ ] Introduire de faux bateaux pour le jeu de détection
-- [ ] Rajouter écran de victoire/défaite quand on clique sur un bateau
+- [X] Introduire de faux bateaux pour le jeu de détection
+- [X] Rajouter écran de victoire/défaite quand on clique sur un bateau
 - [x] Combiner plusieurs trajectoires
+- [ ] Faire varier la difficulté en brouillant plus la vitesse
+- [ ] Rendre les paramètres type difficulté changeable sur l'interface web
 
 ## Communication
 - [x] Faire les slides plateau projet(4)

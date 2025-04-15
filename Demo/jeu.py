@@ -26,6 +26,7 @@ COEFFNORM = 3
 VELOCITY = 5
 DELAY = 50  # Délai entre 2 images
 
+
 # Initialisation de Pygame et Faker
 pygame.init()
 pygame.display.set_caption("Démonstration TRACK!")
