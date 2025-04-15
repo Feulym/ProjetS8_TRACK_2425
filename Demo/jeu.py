@@ -55,7 +55,7 @@ class BateauType(Enum):
 # Vitesse de Base || Variance de Base de l'acceleration/jerk pour chaque type de bateau 
 # CARGO, CORVETTE, PECHE
 # Rapide|Non Maniable   TrèsRApide|Maniable     Lent|Maniable
-params = [[8, 0.05], [8, 1], [3, 0.5]]
+params = [[8, 0.05], [8, 1], [3, 0.5], [6, 1]]
 def randomize_params(param, variation_sigma_pourcentage=10.0):
     """Fais varier entre + et - variation_sigma_pourcentage les valeurs de 
         chaque paramètres en entrée de manière aléatoire
@@ -122,7 +122,6 @@ class InfoCard:
                 return True
         return False
 
-            
                      
 # Créer la classe Button
 class Button:
@@ -160,45 +159,27 @@ liste_vitesses = [[] for _ in range(NBRBOAT)]
 liste_vitesses_moyenne = [[] for _ in range(NBRBOAT)]
 info_cards = []
 
-button = Button(WIDTH - 170, HEIGHT - 70, 150, 50, "Rejouer")
 
-# Générer les bateaux et leurs trajectoires à afficher
-for i in range(NBRBOAT):
+def create_boat(i, start_point, num_points, parametres, typeTraj, boatType):
     
-    if i%4 == 0:
-        param = randomize_params(params[i])
+    param = randomize_params(parametres)
+    
+    if typeTraj == "MRU":
         traj = trajectories.generate_mru_trajectory(start_point, param[0], num_points, sigma=param[1])
-        traj_norm = traj*COEFFNORM
-        # Génération du bateau
-        nom_couleur, rgb = couleurs[i]
-        bateau = Boat(30, BateauType.CARGO, traj_norm, rgb)
-        liste_bateaux.append(bateau)
-    elif i%4 == 1:
-        param = randomize_params(params[i])
+    elif typeTraj == "MUA": 
         traj = trajectories.generate_mua_trajectory(start_point, param[0], num_points, jerk_std=param[1])
-        traj_norm = traj*COEFFNORM
-         # Génération du bateau
-        nom_couleur, rgb = couleurs[i]
-        bateau = Boat(30, BateauType.CORVETTE, traj_norm, rgb)
-        liste_bateaux.append(bateau)
-    elif i%4 == 2:
-        param = randomize_params(params[i])
+    elif typeTraj == "Singer":
         traj = trajectories.generate_singer_trajectory(start_point, param[0], num_points, noise_std=param[1])
-        traj_norm = traj*COEFFNORM
-         # Génération du bateau
-        nom_couleur, rgb = couleurs[i]
-        bateau = Boat(30, BateauType.PECHE, traj_norm, rgb)
-        liste_bateaux.append(bateau)
-    elif i%4 == 3:
-        param = randomize_params(params[i-1])
-        traj = trajectories.allinone(start_point, param[0], 2*num_points, param[1])
-        traj_norm = traj*COEFFNORM
-         # Génération du bateau
-        nom_couleur, rgb = couleurs[i]
-        bateau = Boat(30, BateauType.PECHE, traj_norm, rgb)
-        liste_bateaux.append(bateau)
+    elif typeTraj == "Combinaison":
+        traj = trajectories.allinone(start_point, param[0], num_points, param[1])
     
-   
+    # Normalisation de la trajectoire à la taille de la carte  
+    traj_norm = traj*COEFFNORM
+    
+    # Génération du bateau
+    _, rgb = couleurs[i]
+    bateau = Boat(30, BateauType.CARGO, traj_norm, rgb)
+    liste_bateaux.append(bateau)
     
     # Calcul des vitesses
     liste_vitesses[i] = trajectories.calc_vitesse(traj)
@@ -207,6 +188,23 @@ for i in range(NBRBOAT):
     # Génération de la carte d'infos initiale
     card = InfoCard(200*i, 100, bateau, rgb)
     info_cards.append(card)
+
+
+# Générer les bateaux et leurs trajectoires à afficher
+for i in range(NBRBOAT):
+    
+    if i%4 == 0:
+        create_boat(i, start_point, num_points, params[i], "MRU", BateauType.CARGO)
+    elif i%4 == 1:
+        create_boat(i, start_point, num_points, params[i], "MUA", BateauType.CORVETTE)
+    elif i%4 == 2:
+        create_boat(i, start_point, num_points, params[i], "Singer", BateauType.PECHE)
+    elif i%4 == 3:
+        create_boat(i, start_point, num_points, params[i], "Combinaison", BateauType.CORVETTE)
+    
+   
+    
+    
     
     
     
@@ -219,6 +217,8 @@ for i in range(NBRBOAT):
 
 running = True
 trajectory_index = 1  # On commence à afficher à partir du 2e point (index 1)
+
+button = Button(WIDTH - 170, HEIGHT - 70, 150, 50, "Rejouer")
 
 while running:
     screen.blit(background, (0, 0))
