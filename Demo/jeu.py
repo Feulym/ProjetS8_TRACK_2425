@@ -7,10 +7,11 @@ import trajectories
 import sys
 import os
 
+# Import Pygame sans afficher son message
 # On détourne temporairement stdout
 stdout_backup = sys.stdout
 sys.stdout = open(os.devnull, 'w')
-import pygame       # Import Pygame sans afficher son message
+import pygame       
 # On réactive stdout
 sys.stdout.close()
 sys.stdout = stdout_backup
@@ -34,7 +35,6 @@ fake = Faker('fr_FR')
 background = pygame.image.load(BACKGROUND_IMAGE)
 image = cv2.imread(BACKGROUND_IMAGE, cv2.IMREAD_GRAYSCALE)
 WIDTH, HEIGHT = background.get_width(), background.get_height()
-
 
 
 # Création de la fenêtre avec la taille de l'image et la police
@@ -193,14 +193,15 @@ def create_boat(i, start_point, num_points, parametres, typeTraj, boatType):
 # Générer les bateaux et leurs trajectoires à afficher
 for i in range(NBRBOAT):
     
-    if i%4 == 0:
-        create_boat(i, start_point, num_points, params[i], "MRU", BateauType.CARGO)
-    elif i%4 == 1:
-        create_boat(i, start_point, num_points, params[i], "MUA", BateauType.CORVETTE)
-    elif i%4 == 2:
-        create_boat(i, start_point, num_points, params[i], "Singer", BateauType.PECHE)
-    elif i%4 == 3:
-        create_boat(i, start_point, num_points, params[i], "Combinaison", BateauType.CORVETTE)
+    match i%NBRBOAT:
+        case 0:
+            create_boat(i, start_point, num_points, params[i], "MRU", BateauType.CARGO)
+        case 1:
+            create_boat(i, start_point, num_points, params[i], "MUA", BateauType.CORVETTE)
+        case 2:
+            create_boat(i, start_point, num_points, params[i], "Singer", BateauType.PECHE)
+        case 3:
+            create_boat(i, start_point, num_points, params[i], "Combinaison", BateauType.CORVETTE)
     
    
     
@@ -242,7 +243,6 @@ while running:
                     pygame.draw.line(screen, bateau.color, trajectory[i], trajectory[i + 1], 5)  # Dessiner la ligne
 
         
-
 
     # Dessiner les cartes d'info
     for card in info_cards:

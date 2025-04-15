@@ -149,6 +149,7 @@ def allinone(start, velocity, num_points, sigma, nbr_sous_traj=4):
 def calc_vitesse(trajectory, batch_size=1, get_2dvit=False):
     
     liste_vitesses = [0 for _ in range(len(trajectory))]
+    x1, y1, x2, y2 = 0, 0, 0, 0
     
     for ii in range(1, len(trajectory)):
         x1, y1 = trajectory[ii - 1]
