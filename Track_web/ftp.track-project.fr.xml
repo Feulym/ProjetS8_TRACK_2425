@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="true"?>
+<FileZilla3> 
+    <Servers> 
+        <Server> 
+            <Host>ftp.track-project.fr</Host> 
+            <Port>21</Port> 
+            <Protocol>0</Protocol> 
+            <Type>0</Type> 
+            <User>track2578505</User>
+            <Logontype>2</Logontype> 
+            <TimezoneOffset>0</TimezoneOffset> 
+            <PasvMode>MODE_DEFAULT</PasvMode> 
+            <MaximumMultipleConnections>5</MaximumMultipleConnections> 
+            <EncodingType>Auto</EncodingType> 
+            <BypassProxy>0</BypassProxy> 
+            <Name>ftp.track-project.fr</Name> 
+            <Comments/> 
+            <LocalDir/> 
+            <RemoteDir/> 
+            <SyncBrowsing>0</SyncBrowsing>
+            ftp.track-project.fr 
+        </Server> 
+    </Servers> 
+</FileZilla3>
