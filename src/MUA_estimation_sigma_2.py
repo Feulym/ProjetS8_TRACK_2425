@@ -5,8 +5,18 @@ from numpy.random import randn
 ##############################
 # FONCTIONS
 ##############################
-def simulate_MUA(N, T, sigma2, sigma_b2):
-    """Simule une trajectoire MUA bruitée."""
+import numpy as np
+import matplotlib.pyplot as plt
+from numpy.random import randn
+
+def simulate_MUA(N, T, sigma2):
+    """ 
+        Génération d'une trajectoire MUA 
+        d'après un bruit blanc gaussien centré 
+        comprenant un bruit de modèle
+    """
+    t = np.arange(0, N*T, T)
+    
     A = np.array([
         [1, T, T**2 / 2],
         [0, 1, T],
@@ -22,12 +32,11 @@ def simulate_MUA(N, T, sigma2, sigma_b2):
     L = np.linalg.cholesky(Q)
     X = np.zeros((3, N))
 
-    for k in range(1, N):
-        w = L @ randn(3)
-        X[:, k] = A @ X[:, k-1] + w
-
-    Y = X[0] + np.sqrt(sigma_b2) * randn(N)
-    return Y, X
+    for k in range(N-1):
+        w = L @ randn(3, 1)
+        X[:, k+1] = A @ X[:, k] + w[:, 0]
+    
+    return t, X
 
 def compute_jerk(X, T):
     """Estime le jerk à partir des positions."""
@@ -71,6 +80,40 @@ def estimate_variances(Y, T):
 
     return variances
 
+def bruitage_snr(x, snr_db):
+    """
+    Ajoute un bruit gaussien à un signal en fonction du rapport signal à bruit (SNR) donné.
+    
+    :param x: Signal d'entrée (numpy array)
+    :param snr_db: Liste ou valeur unique du SNR en dB
+    :return: Liste des signaux bruités si snr_db est une liste, sinon un seul signal bruité
+    """
+    X = x - np.mean(x)
+    # Puissance moyenne du signal
+    p_signal = np.mean(X**2)
+    
+    # Conversion en liste si snr_db est une valeur unique (plus pratique pour la suite du programme)
+    if isinstance(snr_db, (int, float)):
+        snr_db = [snr_db]
+    
+    x_bruite = []
+    
+    for snr in snr_db:
+        # Conversion du SNR en échelle linéaire
+        snr_linear = 10**(snr / 10)
+        
+        # Calcul de la puissance du bruit
+        p_bruit = p_signal / snr_linear
+        
+        # Génération du bruit gaussien
+        bruit = np.sqrt(p_bruit) * np.random.randn(*x.shape)
+        
+        # Ajout du bruit au signal
+        x_bruite.append(x + bruit)
+    
+    # Retourne une liste si plusieurs SNR sont fournis, sinon ne retourne que la valeur de la premiere case
+    return x_bruite if len(x_bruite) > 1 else x_bruite[0], p_bruit
+
 ##############################
 # SIMULATION ET ESTIMATION
 ##############################
@@ -78,10 +121,12 @@ N = 5000  # Nombre d'échantillons
 T = 1     # Temps d'échantillonnage
 snr_db = 10
 sigma2 = 4
-sigma_b2 = sigma2 / (10 ** (snr_db / 10))    # Variance bruit d'observation
+sigma_b2 = 0
 
 # Simulation de la trajectoire MUA
-Y, X = simulate_MUA(N, T, sigma2, sigma_b2)
+Y, X = simulate_MUA(N, T, sigma2)
+
+# Y, sigma_b2 = bruitage_snr(Y, 70)
 
 # Estimation des variances
 estimated_variances = estimate_variances(Y, T)
@@ -106,80 +151,4 @@ plt.xlabel("Décalage temporel")
 plt.ylabel("Amplitude")
 plt.legend()
 plt.grid()
-plt.show()
-
-M = 150
-
-data_sigma = []
-data_bsigma = []
-nbr_echantillons = [500, 2000, 5000, 8000, 10000, 20000]
-
-
-data_sigma = []  # Liste pour stocker les estimations de sigma2
-data_bsigma = []  # Liste pour stocker les estimations de bsigma2
-std_sigma = []  # Stockage des écarts-types pour chaque N
-std_bsigma = []  # Stockage des écarts-types pour chaque N
-
-# Boucle sur les différentes tailles d'échantillons
-for N in nbr_echantillons:  
-    temp1 = []
-    temp2 = []
-    for _ in range(M):  
-        Y, X = simulate_MUA(N, T, sigma2, sigma_b2)
-        
-        estimated_variances = estimate_variances(Y, T)
-        sigma2_est=estimated_variances[0]
-        bsigma2_est=estimated_variances[1]
-        
-        temp1.append(sigma2_est)  
-        temp2.append(bsigma2_est)  
-
-    data_sigma.append(temp1)  # Ajouter la liste des estimations pour ce N
-    std_sigma.append(np.std(temp1))  # Calculer l'écart-type
-    data_bsigma.append(temp2)  
-    std_bsigma.append(np.std(temp2))  # Calculer l'écart-type
-# Création des histogrammes
-plt.figure(figsize=(12, 5))
-
-colors = ['blue', 'red', 'yellow', 'green', 'pink','purple']
-labels = [f"N={n}" for n in nbr_echantillons]
-
-plt.subplot(1, 2, 1)
-for i in range(len(nbr_echantillons)):
-    plt.hist(data_bsigma[i], bins=45, color=colors[i], edgecolor='black', alpha=0.6, label=labels[i])
-plt.title("Histogramme de $\sigma_b^2$")
-plt.xlabel("$\sigma^2$ estimé")
-plt.ylabel("Fréquence")
-plt.legend()
-
-plt.subplot(1, 2, 2)
-for i in range(len(nbr_echantillons)):
-    plt.hist(data_sigma[i], bins=45, color=colors[i], edgecolor='black', alpha=0.6, label=labels[i])
-plt.title("Histogramme de $\sigma^2$")
-plt.xlabel("$\sigma_b^2$ estimé")
-plt.ylabel("Fréquence")
-plt.legend()
-
-plt.tight_layout()
-plt.show()
-
-# Representation de la dispersion
-plt.figure(figsize=(12, 5))
-
-plt.subplot(1, 2, 1)
-plt.plot(nbr_echantillons, [x / sigma_b2 * 100 for x in std_bsigma], marker='o', linestyle='-', color='red')
-plt.xlabel("Taille de l'échantillon N")
-plt.ylabel("Écart-type de $\sigma_b^2$ estimé (en %)")
-plt.title("Évolution de la précision de l'estimation")
-plt.grid()
-
-# Tracer l'évolution de l'écart-type pour voir où la précision se stabilise
-plt.subplot(1, 2, 2)
-plt.plot(nbr_echantillons, [x / sigma2 * 100 for x in std_sigma], marker='o', linestyle='-', color='red')
-plt.xlabel("Taille de l'échantillon N")
-plt.ylabel("Écart-type de $\sigma^2$ estimé (en %)")
-plt.title("Évolution de la précision de l'estimation")
-plt.grid()
-
-plt.tight_layout()
 plt.show()

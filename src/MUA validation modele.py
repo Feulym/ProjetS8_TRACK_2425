@@ -61,7 +61,7 @@ def compute_precision(estimated_values, true_value):
         precision = abs((mean_estimation - true_value) / true_value) * 100
     return mean_estimation, precision
 
-N = 5000
+N = 50
 T = 1
 sigma2 = 4
 sigma_b2 = 0
