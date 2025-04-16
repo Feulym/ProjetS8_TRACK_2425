@@ -10,13 +10,14 @@
     <header>
         <nav>
             <a href="#">TRACK!</a>
-            <ul>
-                <li><a href="index.html">HOME</a></li>
-                <li><a href="team.html">TEAM</a></li>
-                <li><a href="demo.html">DEMO</a></li>
-                <li><a href="https://github.com/Feulym/ProjetS8_TRACK_2425">PROJECT</a></li>
+            <button class="burger" onclick="toggleMenu()">☰</button>
+            <ul id="nav-menu">
+              <li><a href="index.html">HOME</a></li>
+              <li><a href="team.html">TEAM</a></li>
+              <li><a href="demo.html">DEMO</a></li>
+              <li><a href="https://github.com/Feulym/ProjetS8_TRACK_2425">PROJECT</a></li>
             </ul>
-        </nav>
+          </nav>
     </header>
     <main>
         <div class="superposed">
@@ -33,4 +34,10 @@
         
     </main>
 </body>
+<script>
+    function toggleMenu() {
+        const menu = document.getElementById("nav-menu");
+        menu.classList.toggle("show");
+      }
+</script>
 </html>
