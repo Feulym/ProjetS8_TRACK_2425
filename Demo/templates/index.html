@@ -5,42 +5,67 @@
 </head>
 <body>
   <h1>Paramètres du jeu</h1>
-  <label>Vitesse : <input type="range" id="speed" min="1" max="10" value="5"></label><br>
+
+  <label>Vitesse : 
+    <input type="range" id="speed" min="1" max="10" value="5">
+    <span id="speedValue">5</span>
+  </label><br>
+
+  <label>Coefficient de difficulté : 
+    <input type="range" id="difficulty_coeff" min="1" max="5" value="3">
+    <span id="coeffValue">3</span>
+  </label><br>
+
   <label>Difficulté : 
     <select id="difficulty">
       <option value="easy">Facile</option>
       <option value="medium" selected>Moyenne</option>
       <option value="hard">Difficile</option>
     </select>
+  </label><br>
+
+  <label>Délai (ms) :
+    <input type="number" id="delay" min="10" max="500" value="50">
   </label><br><br>
 
   <button onclick="sendParams()">Envoyer</button>
-
-  <br>
-
+  <br><br>
   <button onclick="launchGame()">Lancer le jeu</button>
 
-
-
   <script>
+    // Affichage live des valeurs des sliders
+    document.getElementById("speed").oninput = function() {
+      document.getElementById("speedValue").innerText = this.value;
+    };
+    document.getElementById("difficulty_coeff").oninput = function() {
+      document.getElementById("coeffValue").innerText = this.value;
+    };
+
     function sendParams() {
-      const speed = document.getElementById("speed").value;
+      const speed = parseInt(document.getElementById("speed").value);
       const difficulty = document.getElementById("difficulty").value;
+      const difficulty_coeff = parseInt(document.getElementById("difficulty_coeff").value);
+      const delay = parseInt(document.getElementById("delay").value);
 
       fetch('/set_params', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({speed: speed, difficulty: difficulty})
+        body: JSON.stringify({
+          speed: speed,
+          difficulty: difficulty,
+          difficulty_coeff: difficulty_coeff,
+          delay: delay
+        })
       })
       .then(response => response.json())
       .then(data => console.log("Données envoyées :", data));
     }
 
     function launchGame() {
-        fetch('/start_game', { method: 'POST' })
-          .then(response => response.json())
-          .then(data => console.log(data.message));
-      }
+      fetch('/start_game', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => console.log(data.message));
+    }
   </script>
 </body>
 </html>

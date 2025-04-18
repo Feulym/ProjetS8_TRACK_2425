@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template, jsonify
 import subprocess
+import json
 
 app = Flask(__name__)
 
@@ -26,7 +27,9 @@ def set_params():
 
 @app.route('/start_game', methods=['POST'])
 def start_game():
-    subprocess.Popen(["python", "jeu.py"])  # Lance jeu.py en arrière-plan
+    with open("params.json", "w") as f:
+        json.dump(game_params, f)
+    subprocess.Popen(["python", "jeu.py"])
     return jsonify({"message": "Jeu lancé avec succès"})
 
 if __name__ == "__main__":

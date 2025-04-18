@@ -6,6 +6,7 @@ from utils import *
 import trajectories
 import sys
 import os
+import json
 
 # Import Pygame sans afficher son message
 # On détourne temporairement stdout
@@ -18,19 +19,26 @@ sys.stdout = stdout_backup
 
 
 
-# Variables Globales
+# Lire les paramètres depuis params.json
+with open("params.json", "r") as f:
+    params = json.load(f)
+
+# Variables Globales basées sur les paramètres reçus
 BACKGROUND_IMAGE = "background_taiwan.png"
 NBRBOAT = 4
 NBRWRONGBOAT = 1
-COEFFNORM = 3
-VELOCITY = 5
-DELAY = 50  # Délai entre 2 images
+COEFFNORM = params.get("difficulty_coeff", 3)  # Exemple basé sur une valeur transmise
+VELOCITY = params.get("speed", 5)
+DELAY = params.get("delay", 50)
+
+print(f"Paramètres chargés : Vitesse = {VELOCITY}, Coeff = {COEFFNORM}, Délai = {DELAY}")
+
 
 
 # Initialisation de Pygame et Faker
 pygame.init()
 pygame.display.set_caption("Démonstration TRACK!")
-fake = Faker('fr_FR')
+fake = Faker('es_ES')
 
 
 # Chargement de l'image de fond
@@ -333,7 +341,7 @@ while running:
                 screen.blit(text, (200, 250))
                 pygame.display.flip()
                 
-                # affichage des infos complètes des bateaux
+                # Affichage des infos complètes des bateaux
                 print("----INFO BATEAUX-----\n")
                 for bateau in liste_bateaux:
                     bateau.getInfos()
