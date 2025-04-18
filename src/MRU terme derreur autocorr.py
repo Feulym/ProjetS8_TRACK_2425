@@ -69,7 +69,7 @@ taux = 0.01
 sigma = (speed * taux) / 3
 sigma2 = sigma**2
 sigma_b2 = 0.5
-nb_realizations = 10
+nb_realizations = 1000
 N_values = [5000, 2000, 1000, 500, 250, 100, 50, 30]
 
 results_nb_0 = []

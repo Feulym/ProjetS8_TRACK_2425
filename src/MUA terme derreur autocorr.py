@@ -53,7 +53,7 @@ def compute_std_normalized_MUA(N, T, sigma2, sigma_b2=0, nb_realizations=1000, w
 T = 1
 sigma2 = 4
 sigma_b2 = 0.5
-nb_realizations = 10
+nb_realizations = 1000
 N_values = [5000, 2000, 1000, 500, 250, 100, 50, 30]
 
 results_nb_0 = []
