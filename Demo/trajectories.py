@@ -32,18 +32,20 @@ def generate_mru_trajectory(start, initial_velocity, num_points, sigma=0.5):
 
 
 
-
-def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), jerk_std=0.05):
-    """Génère une trajectoire MUA en 2D avec un jerk gaussien."""
+def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), jerk_std=0.05, facteur_maxvit=10):
+    """Génère une trajectoire MUA en 2D avec un jerk gaussien et une vitesse maximale."""
     trajectory = [start]
     velocities = [velocity]
     accelerations = [acceleration]
-    jerk_std = jerk_std/20
+    jerk_std = jerk_std / 20  # Ajustement de la valeur du jerk
+    
+    max_velocity = 50
 
     for i in range(num_points - 1):
         # Générer un jerk gaussien pour chaque composante (x, y)
         jerk = np.random.normal(0, jerk_std, size=2)
         
+        # Si c'est un multiple de 50, réinitialiser l'accélération
         if i % 50 == 0:
             new_acceleration = (0, 0)
         
@@ -53,6 +55,16 @@ def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), je
         
         # Mettre à jour la vitesse
         new_velocity = (velocities[-1][0] + new_acceleration[0], velocities[-1][1] + new_acceleration[1])
+        
+        # Calculer la norme de la nouvelle vitesse
+        velocity_magnitude = np.sqrt(new_velocity[0]**2 + new_velocity[1]**2)
+        
+        # Si la vitesse dépasse la vitesse maximale, la caper
+        if velocity_magnitude > max_velocity:
+            # Calculer le facteur de réduction de la vitesse
+            scale_factor = max_velocity / velocity_magnitude
+            new_velocity = (new_velocity[0] * scale_factor, new_velocity[1] * scale_factor)
+        
         velocities.append(new_velocity)
         
         # Mettre à jour la position
@@ -60,6 +72,7 @@ def generate_mua_trajectory(start, velocity, num_points, acceleration=(0, 0), je
         trajectory.append(next_point)
 
     return np.array(trajectory)
+
 
 
 
