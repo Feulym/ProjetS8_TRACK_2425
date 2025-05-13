@@ -31,6 +31,10 @@ NBRWRONGBOAT = 0
 COEFFNORM = params.get("difficulty_coeff", 3)  # Exemple basé sur une valeur transmise
 VELOCITY = params.get("speed", 5)
 DELAY = params.get("delay", 50)
+NBR_POINTS = 100
+
+saving_mode = False
+loading_mode = not saving_mode
 
 print(f"Paramètres chargés : Vitesse = {VELOCITY}, Coeff = {COEFFNORM}, Délai = {DELAY}")
 
@@ -54,7 +58,7 @@ font = pygame.font.Font(None, 24)   # Police
 
 # Génération de la trajectoire
 start_point = (1200/COEFFNORM, 400/COEFFNORM)
-num_points = 200//COEFFNORM
+num_points = NBR_POINTS//COEFFNORM
 
 
 class BateauType(Enum):
@@ -90,15 +94,16 @@ def randomize_params(param, variation_sigma_pourcentage=10.0):
 
 # Classe pour les infos d'un bateau
 class Boat:
-    def __init__(self, vitesse, boat_type, trajectoire, color, real=True, mvmt_type=""):
+    def __init__(self, vitesse, boat_type, trajectoire, color, real=True, mvmt_type="", liste_v=[], liste_vmoy=[]):
         self.name = fake.first_name()
         self.vitesse = vitesse
         self.type = boat_type
         self.trajectoire = trajectoire
         self.color = color
-        self.vitesse_moyenne = 0
+        self.vitesses_moyenne = liste_vmoy
         self.real = real
         self.mvmt_type = mvmt_type
+        self.liste_vitesse = liste_v
 
     def toString(self):
         return self.name + "\nVitesse: " + str(self.vitesse) + "\nType: " + self.type.value
@@ -184,33 +189,21 @@ class Button:
             
 
 
-def random_boat(real=True):
+def random_boat(real=True, i=0):
     """Génère les paramètres et caractéristiques d'un bateau de façon procédurale
 
     Args:
         real (bool, optional): Permet de choisir si les paramètres et caractéristiques du bateau sont cohérentes ou non. Defaults to True.
     """
-    n = random.randint(0, 3)
-    n2 = n
-    while n2 == n:
-        n2 = random.randint(0, 2)
-    
-    if n == 3:
-        boatType = BoatTypesEnum[n2]
-        mvmnt_type = MouvementsTypeEnum[n2]
-        parametresF = params[n2]
-    else:
-        boatType = BoatTypesEnum[n]
-        mvmnt_type = MouvementsTypeEnum[n]
-        parametresF = params[n]
-        
-            
+    boatType = BoatTypesEnum[i % len(BoatTypesEnum)]  # Correction pour sélectionner un type valide
+    mvmnt_type = MouvementsTypeEnum[i % len(MouvementsTypeEnum)]  # Correction pour sélectionner un mouvement valide
+    parametresF = params[i % len(params)]  # Correction pour éviter un index hors limites
+
     if not real:
         parametres = randomize_params(parametresF, 20.0)
     else:
         parametres = randomize_params(parametresF)
-        
-        
+
     return boatType, parametres, mvmnt_type
         
 
@@ -245,10 +238,27 @@ def create_boat(i, start_point, num_points, parametres, typeTraj, boatType, real
     liste_vitesses[i] = trajectories.calc_vitesse(traj, bateau.real)
     liste_vitesses_moyenne[i] = trajectories.calc_vitesse_moyenne(liste_vitesses[i])
     
+    # Enregistrement des vitesses dans le bateau
+    bateau.liste_vitesse = liste_vitesses[i]
+    bateau.vitesses_moyenne = liste_vitesses_moyenne[i]
+    
     # Génération de la carte d'infos initiale
     card = InfoCard(200*i, 100, bateau, rgb)
     info_cards.append(card)
-
+    
+    
+def load_boat(indice_boat):
+    i = indice_boat
+    filename = f"boat_{i}.pkl"
+    if os.path.exists(filename):
+        bateau = Boat.load_from_file(filename)
+        liste_bateaux.append(bateau)
+        liste_vitesses[i] = bateau.liste_vitesse
+        liste_vitesses_moyenne[i] = bateau.vitesses_moyenne
+        print(f"Bateau {i} chargé depuis {filename}")
+    else:
+        print(f"Erreur: Fichier {filename} non trouvé.")
+        sys.exit(f"Erreur: Impossible de charger le fichier {filename}.")
 
 
 # Déterminer l'indice du/des faux bateaux
@@ -258,8 +268,12 @@ indices_wrong_boats = random.sample(range(NBRBOAT), NBRWRONGBOAT)
 # Générer les bateaux et leurs trajectoires à afficher
 for i in range(NBRBOAT):
     
-    boatType, parametres, mvmt_type = random_boat(i not in indices_wrong_boats)
-    create_boat(i, start_point, num_points, parametres, mvmt_type, boatType, i not in indices_wrong_boats)
+    if saving_mode:
+        boatType, parametres, mvmt_type = random_boat(i not in indices_wrong_boats, i)
+        create_boat(i, start_point, num_points, parametres, mvmt_type, boatType, i not in indices_wrong_boats)
+    else:
+        load_boat(i)
+        
     
     # match i%NBRBOAT:
     #     case 0:
@@ -276,7 +290,15 @@ def affichage_boats():
     for ii in range(liste_bateaux):
         bateau = liste_bateaux[ii]
         
-    
+# Sauvegarde des bateaux dans un fichier
+if saving_mode:
+    for i, bateau in enumerate(liste_bateaux):
+        filename = f"boat_{i}.pkl"
+        bateau.save_to_file(filename)
+        print(f"Bateau {i} sauvegardé dans {filename}")
+
+
+
     
 ###############################################
 ###                                          ##
