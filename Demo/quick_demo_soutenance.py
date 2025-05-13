@@ -115,7 +115,9 @@ class Boat:
         print(separateur + string)
 
     def save_to_file(self, filename):
-        """Sauvegarde l'objet Boat dans un fichier."""
+        """Sauvegarde l'objet Boat dans un fichier. Crée le dossier si nécessaire."""
+        if not os.path.exists(target_folder):
+            os.makedirs(target_folder)  # Crée le dossier s'il n'existe pas
         full_filename = target_folder + "/" + filename
         with open(full_filename, 'wb') as f:
             pickle.dump(self, f)
@@ -258,6 +260,10 @@ def load_boat(indice_boat):
         liste_bateaux.append(bateau)
         liste_vitesses[i] = bateau.liste_vitesse
         liste_vitesses_moyenne[i] = bateau.vitesses_moyenne
+        
+        # Génération de la carte d'infos initiale
+        card = InfoCard(200*i, 100, bateau, bateau.color)
+        info_cards.append(card)
         print(f"Bateau {i} chargé depuis {filename}")
     else:
         print(f"Erreur: Fichier {filename} non trouvé.")
