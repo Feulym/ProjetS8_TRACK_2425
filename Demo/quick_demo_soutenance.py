@@ -33,8 +33,9 @@ VELOCITY = params.get("speed", 5)
 DELAY = params.get("delay", 50)
 NBR_POINTS = 100
 
+# Parametres de sauvegarde et chargement
 saving_mode = False
-loading_mode = not saving_mode
+target_folder = "boats_group_2"
 
 print(f"Paramètres chargés : Vitesse = {VELOCITY}, Coeff = {COEFFNORM}, Délai = {DELAY}")
 
@@ -115,13 +116,15 @@ class Boat:
 
     def save_to_file(self, filename):
         """Sauvegarde l'objet Boat dans un fichier."""
-        with open(filename, 'wb') as f:
+        full_filename = target_folder + "/" + filename
+        with open(full_filename, 'wb') as f:
             pickle.dump(self, f)
 
     @staticmethod
     def load_from_file(filename):
         """Charge un objet Boat depuis un fichier."""
-        with open(filename, 'rb') as f:
+        full_filename = target_folder + "/" + filename
+        with open(full_filename, 'rb') as f:
             return pickle.load(f)
       
 
