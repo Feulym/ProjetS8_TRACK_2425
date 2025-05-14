@@ -44,7 +44,7 @@ print(f"Paramètres chargés : Vitesse = {VELOCITY}, Coeff = {COEFFNORM}, Délai
 # Initialisation de Pygame et Faker
 pygame.init()
 pygame.display.set_caption("Démonstration TRACK!")
-fake = Faker('fr_FR')
+fake = Faker('en_US')
 
 
 # Chargement de l'image de fond
@@ -55,7 +55,7 @@ WIDTH, HEIGHT = background.get_width(), background.get_height()
 
 # Création de la fenêtre avec la taille de l'image et la police
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-font = pygame.font.Font(None, 24)   # Police
+font = pygame.font.Font(None, 36)  # Police
 
 # Génération de la trajectoire
 start_point = (1200/COEFFNORM, 400/COEFFNORM)
@@ -135,7 +135,7 @@ class InfoCard:
         self.x = x
         self.y = y
         self.bateau = bateau  # ← on garde le bateau, pas juste du texte
-        self.width = 150
+        self.width = 270
         self.height = 100
         self.rect = pygame.Rect(x, y, self.width, self.height)
         self.couleur = couleur
@@ -262,7 +262,7 @@ def load_boat(indice_boat):
         liste_vitesses_moyenne[i] = bateau.vitesses_moyenne
         
         # Génération de la carte d'infos initiale
-        card = InfoCard(200*i, 100, bateau, bateau.color)
+        card = InfoCard(270*i, 100, bateau, bateau.color)
         info_cards.append(card)
         print(f"Bateau {i} chargé depuis {filename}")
     else:
@@ -295,9 +295,6 @@ for i in range(NBRBOAT):
     #         create_boat(i, start_point, num_points, params[i], "Combinaison", BateauType.CORVETTE)
     
    
-def affichage_boats():
-    for ii in range(liste_bateaux):
-        bateau = liste_bateaux[ii]
         
 # Sauvegarde des bateaux dans un fichier
 if saving_mode:

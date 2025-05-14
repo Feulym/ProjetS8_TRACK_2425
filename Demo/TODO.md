@@ -24,6 +24,7 @@
 - [ ] Rendre les paramètres type difficulté changeable sur l'interface web
 - [ ] Rendre les trajectoires combinaison brouillable en vitesse
 - [x] Afficher le type de mouvement dans le print final des bateaux
+- [ ] Les combinaisons n apparaissent pas
 
 ## Communication
 - [x] Faire les slides plateau projet(4)
