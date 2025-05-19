@@ -1,0 +1,4 @@
+faker
+opencv-python
+pygame
+flask
